@@ -57,7 +57,7 @@ select id from auth.users where email = 'admin@guestpro.id';
 /admin/[id]/pengaturan   ubah detail acara + undang pengantin/WO
 /admin/[id]/qr     QR per meja, siap cetak
 /admin/akun        buat / ganti password
-/auth/confirm      tujuan link undangan → sesi login
+/auth/confirm      halaman link undangan; token dipakai saat tombol Masuk ditekan
 ```
 
 ## Keputusan yang perlu diingat

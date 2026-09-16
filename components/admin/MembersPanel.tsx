@@ -195,9 +195,9 @@ export default function MembersPanel({ eventId, coupleNames }: Props) {
             </a>
           </div>
           <p className="text-xs leading-relaxed text-cream/50">
-            Link hanya bisa dipakai sekali dan kedaluwarsa setelah beberapa waktu
-            (bawaan Supabase: 1 jam). Kalau sudah lewat, klik &ldquo;Link baru&rdquo; di
-            daftar anggota.
+            Penerima membuka link lalu menekan tombol <b>Masuk ke galeri</b>. Link hanya
+            bisa dipakai sekali, kedaluwarsa setelah beberapa waktu (bawaan Supabase:
+            1 jam), dan ikut hangus kalau kamu membuat link baru untuk email yang sama.
           </p>
         </div>
       ) : null}

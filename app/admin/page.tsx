@@ -7,7 +7,12 @@ import type { EventRow } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
 
-export default async function AdminHomePage() {
+export default async function AdminHomePage({
+  searchParams,
+}: {
+  searchParams: Promise<{ dihapus?: string }>;
+}) {
+  const { dihapus } = await searchParams;
   const context = await getAdminContext();
   if (!context) redirect("/admin/login");
 
@@ -61,6 +66,12 @@ export default async function AdminHomePage() {
           <SignOutButton />
         </div>
       </div>
+
+      {dihapus ? (
+        <p role="status" className="mb-4 rounded-xl border border-teal/50 bg-teal/15 p-4 text-sm">
+          Acara <b>{dihapus.slice(0, 80)}</b> beserta semua fotonya sudah dihapus.
+        </p>
+      ) : null}
 
       {!events || events.length === 0 ? (
         <p className="rounded-xl border border-cream/10 bg-shell-2/60 p-6 text-sm text-cream/60">

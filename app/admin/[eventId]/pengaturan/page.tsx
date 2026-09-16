@@ -3,6 +3,8 @@ import { notFound } from "next/navigation";
 import { getEventAccess } from "@/lib/admin/access";
 import EventForm from "@/components/admin/EventForm";
 import MembersPanel from "@/components/admin/MembersPanel";
+import DeleteEventPanel from "@/components/admin/DeleteEventPanel";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
 
@@ -19,6 +21,19 @@ export default async function EventSettingsPage({
   if (!access?.canManage) notFound();
 
   const { event } = access;
+
+  // Hitungan untuk peringatan hapus: semua status, termasuk foto tersembunyi.
+  let photoCount = 0;
+  let guestCount = 0;
+  if (access.isPlatformAdmin) {
+    const supabase = await createSupabaseServerClient();
+    const [photos, guests] = await Promise.all([
+      supabase.from("photos").select("id", { count: "exact", head: true }).eq("event_id", eventId),
+      supabase.from("guests").select("id", { count: "exact", head: true }).eq("event_id", eventId),
+    ]);
+    photoCount = photos.count ?? 0;
+    guestCount = guests.count ?? 0;
+  }
 
   return (
     <main className="mx-auto min-h-dvh max-w-2xl space-y-8 p-4 sm:p-6">
@@ -63,6 +78,21 @@ export default async function EventSettingsPage({
           <EventForm mode="edit" event={event} />
         </div>
       </section>
+
+      {access.isPlatformAdmin ? (
+        <section className="space-y-3">
+          <h2 className="text-lg font-semibold text-red-300">Hapus acara</h2>
+          <div className="rounded-2xl border border-red-400/30 bg-red-500/5 p-5 sm:p-6">
+            <DeleteEventPanel
+              eventId={eventId}
+              slug={event.slug}
+              coupleNames={event.couple_names}
+              photoCount={photoCount}
+              guestCount={guestCount}
+            />
+          </div>
+        </section>
+      ) : null}
     </main>
   );
 }

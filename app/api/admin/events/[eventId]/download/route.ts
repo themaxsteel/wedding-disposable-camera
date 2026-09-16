@@ -4,7 +4,7 @@ import { ZipArchive } from "archiver";
 import { getEventAccess } from "@/lib/admin/access";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { jsonError } from "@/lib/api";
-import { PHOTO_BUCKET, ZIP_PART_SIZE } from "@/lib/env";
+import { PHOTO_BUCKET, ZIP_DOWNLOAD_CONCURRENCY, ZIP_PART_SIZE } from "@/lib/env";
 import { toFolderName } from "@/lib/util/name";
 
 export const runtime = "nodejs";
@@ -64,25 +64,47 @@ export async function GET(
 
   const storage = admin.storage.from(PHOTO_BUCKET);
 
+  // Foto gagal diambil dilewati, sama seperti sebelumnya.
+  async function fetchPhoto(row: Row): Promise<Buffer | null> {
+    const path =
+      variant === "film" && row.filtered_path ? row.filtered_path : row.storage_path;
+    try {
+      const { data: file, error: downloadError } = await storage.download(path);
+      if (downloadError || !file) return null;
+      return Buffer.from(await file.arrayBuffer());
+    } catch {
+      return null;
+    }
+  }
+
+  function appendPhoto(row: Row, buffer: Buffer | null) {
+    if (!buffer) return;
+    const when = new Date(row.taken_at ?? row.created_at);
+    const stamp = when
+      .toISOString()
+      .replace(/[:T]/g, "-")
+      .slice(0, 16);
+    const folder = toFolderName(row.guests.display_name);
+    archive.append(buffer, {
+      name: `${folder}/${stamp}_${row.id.slice(0, 8)}.jpg`,
+      date: when,
+    });
+  }
+
   void (async () => {
     try {
+      // Jendela geser: beberapa foto diunduh bersamaan, tetapi masuk ZIP sesuai
+      // urutan. Paling banyak ZIP_DOWNLOAD_CONCURRENCY buffer tertahan di memori.
+      const inFlight: { row: Row; buffer: Promise<Buffer | null> }[] = [];
       for (const row of rows) {
-        const path =
-          variant === "film" && row.filtered_path ? row.filtered_path : row.storage_path;
-        const { data: file, error: downloadError } = await storage.download(path);
-        if (downloadError || !file) continue;
-
-        const buffer = Buffer.from(await file.arrayBuffer());
-        const when = new Date(row.taken_at ?? row.created_at);
-        const stamp = when
-          .toISOString()
-          .replace(/[:T]/g, "-")
-          .slice(0, 16);
-        const folder = toFolderName(row.guests.display_name);
-        archive.append(buffer, {
-          name: `${folder}/${stamp}_${row.id.slice(0, 8)}.jpg`,
-          date: when,
-        });
+        inFlight.push({ row, buffer: fetchPhoto(row) });
+        if (inFlight.length >= ZIP_DOWNLOAD_CONCURRENCY) {
+          const oldest = inFlight.shift()!;
+          appendPhoto(oldest.row, await oldest.buffer);
+        }
+      }
+      for (const item of inFlight) {
+        appendPhoto(item.row, await item.buffer);
       }
     } finally {
       await archive.finalize();

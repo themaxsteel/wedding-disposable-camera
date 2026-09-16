@@ -163,6 +163,7 @@ Dua keputusan di sini:
   thumbnail) ditandatangani dalam satu panggilan `createSignedUrls` (TTL 1 jam).
 - ZIP distream dengan `archiver` mode *store* — JPEG tidak dikompres ulang — dan
   dipecah per 300 foto supaya satu permintaan tidak menembus batas waktu fungsi.
+  Foto diambil dari Storage 6 sekaligus, tetapi dimasukkan ke ZIP sesuai urutan.
 - Hapus acara: tutup kamera → hapus file per batch 1000 (daftar file dari fungsi
   SQL `event_storage_objects`) → hapus baris acara (cascade). File dihapus lebih
   dulu supaya proses yang terputus bisa diulang.
@@ -214,6 +215,7 @@ supabase/migrations/        skema database berurutan
 | Umur sesi tamu | 18 jam | `GUEST_SESSION_HOURS`, `lib/env.ts` |
 | Foto per halaman galeri | 48 | `GALLERY_PAGE_SIZE` |
 | Foto per ZIP | 300 | `ZIP_PART_SIZE` |
+| Unduhan paralel saat membuat ZIP | 6 | `ZIP_DOWNLOAD_CONCURRENCY` |
 | Umur signed URL galeri | 1 jam | `SIGNED_URL_TTL_SECONDS` |
 | Default jatah film | 27 | kolom `events.film_limit` |
 

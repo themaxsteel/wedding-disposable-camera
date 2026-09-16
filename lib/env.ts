@@ -41,6 +41,9 @@ export const GUEST_SESSION_HOURS = 18;
 /** Jumlah foto per file ZIP; menjaga route download tetap di bawah batas waktu serverless. */
 export const ZIP_PART_SIZE = 300;
 
+/** Jumlah foto yang diambil dari Storage bersamaan saat membuat ZIP. */
+export const ZIP_DOWNLOAD_CONCURRENCY = 6;
+
 /** Umur signed URL foto di dashboard. */
 export const SIGNED_URL_TTL_SECONDS = 60 * 60;
 

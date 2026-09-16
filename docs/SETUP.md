@@ -109,6 +109,11 @@ Webcam laptop bisa dipakai karena `localhost` dianggap *secure context*.
    URL `*-<team>.vercel.app` terkunci oleh Vercel Deployment Protection.
 4. Set `NEXT_PUBLIC_SITE_URL` ke domain produksi, lalu **Redeploy**.
 
+Region fungsi dikunci ke Singapura (`sin1`) lewat `vercel.json`, sama dengan
+region Supabase. Tanpa itu Vercel memakai `iad1` (AS) dan setiap query serta
+unduhan foto bolak-balik AS–Singapura. Kalau region Supabase diganti, ubah juga
+`vercel.json`. Cek dari header respons: `X-Vercel-Id: sin1::sin1::…`.
+
 Setiap push ke `main` otomatis di-deploy. Migrasi database **tidak** ikut
 otomatis — jalankan `npm run db:push` sebelum push kode yang bergantung padanya.
 

@@ -89,3 +89,15 @@ export interface AdminPhotoItem {
   url: string | null;
   hasFilm: boolean;
 }
+
+export type MemberRole = "owner" | "editor" | "viewer";
+
+/** Satu baris daftar anggota acara di halaman pengaturan. */
+export interface EventMemberItem {
+  userId: string;
+  email: string | null;
+  role: MemberRole;
+  /** Belum pernah login sama sekali — undangan belum dibuka. */
+  pending: boolean;
+  isSelf: boolean;
+}

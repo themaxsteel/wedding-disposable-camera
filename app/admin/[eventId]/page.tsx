@@ -41,18 +41,29 @@ export default async function EventDashboardPage({
             /e/{access.event.slug} · {count ?? 0} foto · {guests.length} tamu memotret
           </p>
         </div>
-        <Link
-          href={`/admin/${eventId}/qr`}
-          className="rounded-lg border border-cream/15 px-3 py-2 text-xs text-cream/70 transition hover:border-film/40 hover:text-cream"
-        >
-          Cetak QR meja
-        </Link>
+        <div className="flex flex-wrap gap-2">
+          {access.canManage ? (
+            <Link
+              href={`/admin/${eventId}/pengaturan`}
+              className="rounded-lg border border-cream/15 px-3 py-2 text-xs text-cream/70 transition hover:border-film/40 hover:text-cream"
+            >
+              Pengaturan & undangan
+            </Link>
+          ) : null}
+          <Link
+            href={`/admin/${eventId}/qr`}
+            className="rounded-lg border border-cream/15 px-3 py-2 text-xs text-cream/70 transition hover:border-film/40 hover:text-cream"
+          >
+            Cetak QR meja
+          </Link>
+        </div>
       </div>
 
       <Gallery
         eventId={eventId}
         guests={guests}
         totalPhotos={count ?? 0}
+        canManage={access.canManage}
       />
     </main>
   );

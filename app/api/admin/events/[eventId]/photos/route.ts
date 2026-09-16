@@ -98,8 +98,8 @@ export async function PATCH(
 ) {
   const { eventId } = await params;
   const access = await getEventAccess(eventId);
-  if (!access) {
-    return jsonError("SESI_TIDAK_VALID", "Tidak punya akses ke acara ini.", 403);
+  if (!access?.canManage) {
+    return jsonError("SESI_TIDAK_VALID", "Tidak punya izin menyembunyikan foto.", 403);
   }
 
   const body = (await request.json().catch(() => null)) as {

@@ -18,8 +18,29 @@ Stack: Next.js 16 (App Router) · TailwindCSS 4 · Supabase (Postgres, Storage, 
 4. Untuk tes di HP: `npm run dev:https` — `getUserMedia` mati di HTTP kecuali
    `localhost`, jadi HP wajib mengakses lewat HTTPS (atau tunnel ngrok/Cloudflare).
 
-Buat akun admin di Supabase → Authentication → Users, lalu daftarkan sebagai
-owner acara (lihat blok komentar di `supabase/seed.sql`).
+### Peran & akun
+
+| Peran | Bisa apa | Cara mendapatkannya |
+|---|---|---|
+| Admin GuestPro | Membuat acara, melihat & mengelola semua acara | Baris di tabel `platform_admins` (lihat SQL di bawah) |
+| Pengantin (`owner`) | Lihat & unduh foto, ubah pengaturan, undang orang | Diundang dari *Pengaturan & undangan* |
+| Pengelola / WO (`editor`) | Lihat & unduh foto, ubah pengaturan | Diundang |
+| Lihat saja (`viewer`) | Lihat & unduh foto | Diundang |
+
+Undangan berupa **link sekali pakai** yang disalin admin lalu dikirim lewat
+WhatsApp — bukan email, karena layanan email bawaan Supabase hanya mengirim ke
+anggota tim project. Link kedaluwarsa mengikuti *Email OTP Expiration* di
+Supabase (bawaan 1 jam; bisa dinaikkan sampai 24 jam di Authentication → Providers → Email).
+
+Menambah admin GuestPro (buat usernya dulu di Authentication → Users):
+
+```sql
+insert into public.platform_admins (user_id)
+select id from auth.users where email = 'admin@guestpro.id';
+```
+
+**Matikan pendaftaran publik** di Authentication → Sign In / Providers →
+*Allow new users to sign up*. Akun hanya perlu dibuat lewat undangan.
 
 ## Alur
 
@@ -32,7 +53,11 @@ owner acara (lihat blok komentar di `supabase/seed.sql`).
                         3. POST /api/photos/commit
 /e/[slug]/selesai  layar penutup saat rol film habis
 /admin             daftar acara  → /admin/[eventId] galeri + filter nama + ZIP
+/admin/acara-baru  buat acara (khusus admin GuestPro)
+/admin/[id]/pengaturan   ubah detail acara + undang pengantin/WO
 /admin/[id]/qr     QR per meja, siap cetak
+/admin/akun        buat / ganti password
+/auth/confirm      tujuan link undangan → sesi login
 ```
 
 ## Keputusan yang perlu diingat

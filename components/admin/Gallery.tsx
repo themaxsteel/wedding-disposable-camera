@@ -9,9 +9,11 @@ interface Props {
   eventId: string;
   guests: GuestSummaryRow[];
   totalPhotos: number;
+  /** Anggota "lihat saja" tidak boleh menyembunyikan foto. */
+  canManage: boolean;
 }
 
-export default function Gallery({ eventId, guests, totalPhotos }: Props) {
+export default function Gallery({ eventId, guests, totalPhotos, canManage }: Props) {
   const [activeGuest, setActiveGuest] = useState<string | null>(null);
   const [variant, setVariant] = useState<Variant>("orig");
   const [search, setSearch] = useState("");
@@ -277,13 +279,15 @@ export default function Gallery({ eventId, guests, totalPhotos }: Props) {
               </div>
 
               <div className="flex gap-2">
-                <button
-                  type="button"
-                  onClick={() => toggleHidden(lightbox)}
-                  className="rounded-lg border border-cream/20 px-3 py-2 text-xs text-cream/70 hover:border-film/50"
-                >
-                  Sembunyikan
-                </button>
+                {canManage ? (
+                  <button
+                    type="button"
+                    onClick={() => toggleHidden(lightbox)}
+                    className="rounded-lg border border-cream/20 px-3 py-2 text-xs text-cream/70 hover:border-film/50"
+                  >
+                    Sembunyikan
+                  </button>
+                ) : null}
                 <button
                   type="button"
                   onClick={() => setLightbox(null)}

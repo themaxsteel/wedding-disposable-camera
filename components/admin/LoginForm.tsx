@@ -32,8 +32,16 @@ export default function LoginForm() {
     router.refresh();
   }
 
+  const linkExpired = searchParams.get("link") === "kedaluwarsa";
+
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
+      {linkExpired ? (
+        <p role="alert" className="rounded-lg border border-film/40 bg-film/10 p-3 text-sm text-cream/80">
+          Link masuk sudah kedaluwarsa atau sudah pernah dipakai. Minta link baru ke
+          admin, atau login dengan password kalau kamu sudah membuatnya.
+        </p>
+      ) : null}
       <div>
         <label htmlFor="email" className="mb-1 block text-xs text-cream/50">
           Email

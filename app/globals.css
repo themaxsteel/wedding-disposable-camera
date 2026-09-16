@@ -1,22 +1,46 @@
 @import "tailwindcss";
 
-@theme {
-  --color-shell: #14110f;
-  --color-shell-2: #1e1a17;
-  --color-cream: #f3e9da;
-  --color-film: #f0a04b;
-  --color-film-deep: #c4622d;
-  --color-teal: #2f6f6b;
-  --color-grime: #6b6259;
+/*
+ * Sistem desain "kamera sekali pakai": plastik gelap hangat, teks krem,
+ * satu aksen oranye film. Warna hijau (ok) dan merah bata (danger) hanya
+ * untuk status, tidak pernah untuk dekorasi.
+ *
+ * Aturan sudut: kontrol (tombol, input) rounded-xl, panel rounded-2xl,
+ * bodi kamera rounded-[28px], tombol fisik kamera bulat penuh.
+ */
+@theme inline {
+  --color-shell: #110f0e;
+  --color-shell-2: #1a1715;
+  --color-shell-3: #25211e;
+  --color-line: rgb(242 232 217 / 0.1);
+  --color-line-strong: rgb(242 232 217 / 0.18);
+  --color-cream: #f2e8d9;
+  --color-film: #e39a50;
+  --color-film-hi: #eca966;
+  --color-ok: #7fb8a4;
+  --color-danger: #e2806f;
 
-  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
-    "Helvetica Neue", Arial, sans-serif;
-  --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
-    "Liberation Mono", monospace;
+  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, -apple-system,
+    "Segoe UI", Roboto, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo,
+    Consolas, monospace;
+
+  --shadow-body: 0 1px 0 0 rgb(242 232 217 / 0.06) inset,
+    0 30px 60px -30px rgb(6 4 3 / 0.9);
+  --shadow-press: 0 2px 0 0 rgb(6 4 3 / 0.6);
+
+  --animate-shimmer: shimmer 1.6s ease-in-out infinite;
+  --animate-recharge: recharge 1500ms ease-out forwards;
 }
 
+/* Skala z-index. Pakai lewat z-(--z-…), jangan angka lepas. */
 :root {
   color-scheme: dark;
+  --z-sticky: 10;
+  --z-toast: 40;
+  --z-sheet: 50;
+  --z-flash: 60;
+  --z-grain: 70;
 }
 
 html,
@@ -27,6 +51,48 @@ body {
 
 body {
   -webkit-font-smoothing: antialiased;
+  font-feature-settings: "ss01", "cv11";
+}
+
+h1,
+h2,
+h3 {
+  text-wrap: balance;
+}
+
+p {
+  text-wrap: pretty;
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-film);
+  outline-offset: 2px;
+}
+
+::selection {
+  background: rgb(227 154 80 / 0.35);
+}
+
+/* Grain film tipis di atas semua halaman. Elemen fixed tanpa pointer
+   supaya tidak ikut di-repaint saat scroll. Layar kamera dikecualikan. */
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-grain);
+  pointer-events: none;
+  opacity: 0.07;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 0.95 0 0 0 0 0.9 0 0 0 0.6 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+body:has(.camera-surface)::after {
+  display: none;
+}
+
+@media print {
+  body::after {
+    display: none;
+  }
 }
 
 /* Layar kamera dipakai dengan jempol, sambil berdiri, sering sambil tertawa.
@@ -48,23 +114,31 @@ body {
   padding-bottom: max(1rem, env(safe-area-inset-bottom));
 }
 
-/* Tekstur plastik bodi kamera sekali pakai. */
+/* Permukaan plastik bodi kamera: cahaya dari atas, garis cetakan halus. */
 .shell-texture {
+  background-color: var(--color-shell);
+  background-image:
+    radial-gradient(90% 60% at 20% -10%, rgb(227 154 80 / 0.09) 0%, transparent 60%),
+    radial-gradient(120% 80% at 50% 0%, #221d1a 0%, var(--color-shell) 65%);
+}
+
+.body-plastic {
   background-image:
     repeating-linear-gradient(
       0deg,
-      rgba(255, 255, 255, 0.025) 0px,
-      rgba(255, 255, 255, 0.025) 1px,
+      rgb(242 232 217 / 0.018) 0px,
+      rgb(242 232 217 / 0.018) 1px,
       transparent 1px,
       transparent 3px
     ),
-    radial-gradient(120% 80% at 50% 0%, #2a2421 0%, #14110f 70%);
+    linear-gradient(180deg, #211d1a 0%, var(--color-shell-2) 100%);
+  box-shadow: var(--shadow-body);
 }
 
 .viewfinder-frame {
   box-shadow:
-    inset 0 0 0 2px rgba(243, 233, 218, 0.15),
-    inset 0 0 60px rgba(0, 0, 0, 0.6);
+    inset 0 0 0 1px rgb(242 232 217 / 0.12),
+    inset 0 0 80px rgb(6 4 3 / 0.55);
 }
 
 @keyframes flash-pop {
@@ -77,18 +151,51 @@ body {
   animation: flash-pop 320ms ease-out forwards;
 }
 
-@keyframes toast-in {
-  from { opacity: 0; transform: translateY(8px); }
-  to { opacity: 1; transform: translateY(0); }
+@keyframes shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
 }
 
-.toast-in {
-  animation: toast-in 180ms ease-out;
+/* Tombol shutter "mengisi ulang" setelah menjepret. */
+@keyframes recharge {
+  from { opacity: 1; transform: scale(0.86); }
+  to { opacity: 0; transform: scale(1); }
+}
+
+/* Garis waktu caption: menyusut dari penuh ke nol. */
+@keyframes deplete {
+  from { transform: scaleX(1); }
+  to { transform: scaleX(0); }
+}
+
+@keyframes reveal {
+  from { opacity: 0; transform: translateY(14px); }
+  to { opacity: 1; transform: none; }
+}
+
+.reveal {
+  animation: reveal 550ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes roll-wind {
+  from { transform: rotate(-300deg); }
+  to { transform: none; }
+}
+
+.roll-wind {
+  animation: roll-wind 1600ms cubic-bezier(0.12, 0.8, 0.2, 1) both;
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .reveal,
+  .roll-wind {
+    animation: none;
+  }
+
   .flash-pop,
-  .toast-in {
+  .animate-shimmer,
+  .animate-recharge {
     animation-duration: 1ms;
+    animation-iteration-count: 1;
   }
 }

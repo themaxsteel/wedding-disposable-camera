@@ -1,6 +1,12 @@
 "use client";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { AnimatePresence } from "motion/react";
+import {
+  CameraRotateIcon,
+  LightningIcon,
+  LightningSlashIcon,
+} from "@phosphor-icons/react/ssr";
 import { useCameraStream } from "@/lib/camera/useCameraStream";
 import {
   frameFromFile,
@@ -53,6 +59,7 @@ export default function CameraView({ session }: { session: GuestSessionInfo }) {
   const [flashOn, setFlashOn] = useState(false);
   const [screenFlash, setScreenFlash] = useState(false);
   const [blink, setBlink] = useState(false);
+  const [shotKey, setShotKey] = useState(0);
   const [toast, setToast] = useState<{ message: string; tone: "ok" | "warn" } | null>(
     null,
   );
@@ -140,7 +147,7 @@ export default function CameraView({ session }: { session: GuestSessionInfo }) {
       });
 
       setRemaining((value) => Math.max(0, value - 1));
-      setToast({ message: "Foto tersimpan!", tone: "ok" });
+      setToast({ message: "Foto tersimpan", tone: "ok" });
       captionForRef.current = clientPhotoId;
       setCaptionFor(clientPhotoId);
     },
@@ -152,6 +159,7 @@ export default function CameraView({ session }: { session: GuestSessionInfo }) {
     const now = Date.now();
     if (now - lastShotRef.current < SHOT_COOLDOWN_MS) return;
     lastShotRef.current = now;
+    setShotKey(now);
 
     const video = videoRef.current;
     if (!video || video.readyState < 2) {
@@ -241,25 +249,25 @@ export default function CameraView({ session }: { session: GuestSessionInfo }) {
   }
 
   return (
-    <main className="camera-surface relative flex h-dvh flex-col bg-black">
-      <header className="flex items-center justify-between px-4 safe-top">
+    <main className="camera-surface relative flex h-dvh flex-col bg-shell">
+      <header className="flex items-center justify-between gap-3 px-4 pb-1 safe-top">
         <FilmCounter
           remaining={remaining}
           limit={session.filmLimit}
           pending={pending}
           offline={offline}
         />
-        <div className="text-right">
-          <p className="max-w-36 truncate text-sm text-cream/80">
+        <div className="min-w-0 text-right">
+          <p className="max-w-40 truncate text-sm font-medium text-cream/85">
             {session.displayName}
           </p>
           {session.tableLabel ? (
-            <p className="font-mono text-[10px] text-cream/35">{session.tableLabel}</p>
+            <p className="truncate font-mono text-[11px] text-cream/45">{session.tableLabel}</p>
           ) : null}
         </div>
       </header>
 
-      <div className="relative mx-4 my-3 flex-1 overflow-hidden rounded-2xl bg-shell-2 viewfinder-frame">
+      <div className="viewfinder-frame relative mx-3 my-2 flex-1 overflow-hidden rounded-[28px] bg-shell-2">
         <video
           ref={attachVideo}
           playsInline
@@ -271,46 +279,47 @@ export default function CameraView({ session }: { session: GuestSessionInfo }) {
           }}
         />
 
-        {/* Bingkai bidik ala jendela bidik optik */}
-        <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-          <div className="h-2/3 w-2/3 rounded-lg border border-cream/20" />
+        {/* Tanda sudut ala jendela bidik optik */}
+        <div aria-hidden className="pointer-events-none absolute inset-6">
+          <span className="absolute top-0 left-0 size-6 rounded-tl-lg border-t-2 border-l-2 border-cream/45" />
+          <span className="absolute top-0 right-0 size-6 rounded-tr-lg border-t-2 border-r-2 border-cream/45" />
+          <span className="absolute bottom-0 left-0 size-6 rounded-bl-lg border-b-2 border-l-2 border-cream/45" />
+          <span className="absolute right-0 bottom-0 size-6 rounded-br-lg border-r-2 border-b-2 border-cream/45" />
         </div>
 
         {blink ? (
-          <div className="flash-pop pointer-events-none absolute inset-0 bg-white" />
+          <div className="flash-pop pointer-events-none absolute inset-0 bg-cream" />
         ) : null}
       </div>
 
-      <div className="flex items-center justify-between px-8 pb-4 safe-bottom">
+      <div className="flex items-center justify-around px-6 pt-3 pb-4 safe-bottom">
         <IconButton
           label={flashOn ? "Matikan flash" : "Nyalakan flash"}
           active={flashOn}
           onPress={() => setFlashOn((value) => !value)}
         >
-          <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" aria-hidden>
-            <path
-              d="M13 2 4.5 13.5H11l-1 8.5 8.5-11.5H12l1-8.5Z"
-              fill="currentColor"
-              opacity={flashOn ? 1 : 0.45}
-            />
-            {!flashOn ? (
-              <path d="M4 20 20 4" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-            ) : null}
-          </svg>
+          {flashOn ? (
+            <LightningIcon weight="fill" aria-hidden />
+          ) : (
+            <LightningSlashIcon aria-hidden />
+          )}
         </IconButton>
 
-        <ShutterButton onPress={() => void capture()} disabled={busy} busy={busy} />
+        <ShutterButton
+          onPress={() => void capture()}
+          disabled={busy}
+          busy={busy}
+          shotKey={shotKey}
+        />
 
         <IconButton label="Putar kamera" onPress={() => void flipCamera()} disabled={busy}>
-          <span className="text-lg" aria-hidden>
-            {"⟳"}
-          </span>
+          <CameraRotateIcon aria-hidden />
         </IconButton>
       </div>
 
       {/* Flash layar untuk perangkat tanpa torch */}
       {screenFlash ? (
-        <div className="pointer-events-none fixed inset-0 z-50 bg-white" />
+        <div className="pointer-events-none fixed inset-0 z-(--z-flash) bg-white" />
       ) : null}
 
       <Toast
@@ -319,11 +328,11 @@ export default function CameraView({ session }: { session: GuestSessionInfo }) {
         onDone={() => setToast(null)}
       />
 
-      <CaptionSheet
-        key={captionFor ?? "kosong"}
-        open={captionFor !== null}
-        onClose={(caption) => void closeCaption(caption)}
-      />
+      <AnimatePresence>
+        {captionFor !== null ? (
+          <CaptionSheet key={captionFor} onClose={(caption) => void closeCaption(caption)} />
+        ) : null}
+      </AnimatePresence>
     </main>
   );
 }

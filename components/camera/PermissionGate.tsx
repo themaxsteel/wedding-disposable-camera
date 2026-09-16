@@ -9,6 +9,17 @@ import {
   permissionHelpText,
 } from "@/lib/camera/browserDetect";
 import type { StreamStatus } from "@/lib/camera/useCameraStream";
+import { m } from "motion/react";
+import {
+  ApertureIcon,
+  ArrowClockwiseIcon,
+  CameraIcon,
+  CheckIcon,
+  CopyIcon,
+  ImageSquareIcon,
+} from "@phosphor-icons/react/ssr";
+import Button from "@/components/ui/Button";
+import { Notice } from "@/components/ui/Panel";
 
 const subscribeNever = () => () => {};
 
@@ -22,7 +33,7 @@ interface Props {
 
 /**
  * Semua kondisi sebelum viewfinder hidup: izin, error, dan jalur cadangan.
- * Tamu tidak boleh sampai buntu — input galeri selalu tersedia.
+ * Tamu tidak boleh sampai buntu: input galeri selalu tersedia.
  */
 export default function PermissionGate({
   status,
@@ -52,71 +63,97 @@ export default function PermissionGate({
     }
   }
 
+  const starting = status === "starting";
+
   return (
-    <main className="flex min-h-dvh flex-col items-center justify-center gap-6 p-6 shell-texture safe-top safe-bottom">
-      <div className="w-full max-w-sm space-y-5 text-center">
-        <div>
-          <p className="font-mono text-[10px] uppercase tracking-[0.35em] text-film/80">
-            Kamera sekali pakai
-          </p>
-          <h1 className="mt-2 text-xl font-semibold">{coupleNames}</h1>
-        </div>
+    <main className="shell-texture flex min-h-dvh flex-col px-5 pt-8 pb-8 safe-top safe-bottom">
+      <div className="mx-auto flex w-full max-w-sm flex-1 flex-col">
+        <p className="text-sm text-cream/55">{coupleNames}</p>
 
-        {inApp ? (
-          <div className="rounded-xl border border-film/40 bg-film/10 p-4 text-left text-sm">
-            <p className="font-medium text-film">Buka di Safari / Chrome</p>
-            <p className="mt-1 text-cream/60">
-              Browser di dalam aplikasi (Instagram, WhatsApp, dsb.) sering memblokir
-              kamera. Ketuk menu «…» lalu pilih &ldquo;Buka di browser&rdquo;.
-            </p>
-            <button
-              type="button"
-              onClick={copyLink}
-              className="mt-3 rounded-lg border border-film/50 px-3 py-2 text-xs font-medium text-film"
-            >
-              {copied ? "Link tersalin ✓" : "Salin link"}
-            </button>
-          </div>
-        ) : null}
+        <div className="flex flex-1 flex-col justify-center gap-7 py-8">
+          {/* Lensa: berdenyut pelan saat kamera sedang dinyalakan */}
+          <m.div
+            aria-hidden
+            className="body-plastic flex size-28 items-center justify-center rounded-full border border-line"
+            animate={starting ? { scale: [1, 0.96, 1] } : { scale: 1 }}
+            transition={starting ? { duration: 1.2, repeat: Infinity, ease: "easeInOut" } : undefined}
+          >
+            <span className="flex size-20 items-center justify-center rounded-full bg-[radial-gradient(circle_at_35%_30%,#3d3530_0%,#0b0908_72%)] shadow-[inset_0_3px_10px_rgb(0_0_0/0.8)] ring-1 ring-cream/10">
+              <ApertureIcon className="size-9 text-film/85" weight="light" />
+            </span>
+          </m.div>
 
-        {status === "error" && errorKind ? (
-          <div className="rounded-xl border border-cream/15 bg-black/30 p-4 text-left text-sm">
-            <p className="font-medium text-film">{cameraErrorMessage(errorKind)}</p>
-            {errorKind === "ditolak" ? (
-              <p className="mt-2 leading-relaxed text-cream/60">
-                {permissionHelpText()}
+          <div className="space-y-2">
+            <h1 className="text-3xl leading-tight font-semibold tracking-tight">
+              {status === "error" ? "Kamera belum bisa dibuka" : "Siap memotret?"}
+            </h1>
+            {status !== "error" ? (
+              <p className="max-w-[36ch] text-[15px] leading-relaxed text-cream/65">
+                Browser akan meminta izin kamera. Pilih{" "}
+                <span className="font-medium text-cream">Izinkan</span>, lalu jepret
+                sesukamu sampai filmnya habis.
               </p>
             ) : null}
           </div>
-        ) : (
-          <p className="text-sm leading-relaxed text-cream/60">
-            Sebentar lagi browser minta izin kamera — pilih{" "}
-            <span className="text-cream">Izinkan</span>. Foto langsung terkirim ke
-            pengantin dan tidak bisa kamu lihat lagi setelahnya.
-          </p>
-        )}
 
-        <button
-          type="button"
-          onClick={onStart}
-          disabled={status === "starting"}
-          className="w-full rounded-xl bg-film px-4 py-4 text-base font-semibold text-shell transition active:scale-[0.99] disabled:opacity-60"
-        >
-          {status === "starting"
-            ? "Menyalakan kamera…"
-            : status === "error"
-              ? "Coba lagi"
-              : "Buka kamera"}
-        </button>
+          {inApp ? (
+            <Notice
+              tone="warn"
+              title="Buka di Safari atau Chrome"
+              action={
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  onClick={copyLink}
+                  icon={
+                    copied ? (
+                      <CheckIcon className="size-4 text-ok" weight="bold" aria-hidden />
+                    ) : (
+                      <CopyIcon className="size-4" aria-hidden />
+                    )
+                  }
+                >
+                  {copied ? "Link tersalin" : "Salin link"}
+                </Button>
+              }
+            >
+              Browser di dalam aplikasi seperti Instagram atau WhatsApp sering memblokir
+              kamera. Ketuk menu di pojok, lalu pilih Buka di browser.
+            </Notice>
+          ) : null}
 
-        <div className="pt-2">
-          <button
-            type="button"
+          {status === "error" && errorKind ? (
+            <Notice tone="danger" title={cameraErrorMessage(errorKind)}>
+              {errorKind === "ditolak" ? permissionHelpText() : null}
+            </Notice>
+          ) : null}
+        </div>
+
+        <div className="space-y-3">
+          <Button
+            size="lg"
+            block
+            onClick={onStart}
+            loading={starting}
+            icon={
+              status === "error" ? (
+                <ArrowClockwiseIcon className="size-5" weight="bold" aria-hidden />
+              ) : (
+                <CameraIcon className="size-5" weight="bold" aria-hidden />
+              )
+            }
+          >
+            {starting ? "Menyalakan kamera" : status === "error" ? "Coba lagi" : "Buka kamera"}
+          </Button>
+
+          <Button
+            variant="ghost"
+            block
             onClick={() => fileRef.current?.click()}
-            className="text-xs text-cream/40 underline underline-offset-4"
+            icon={<ImageSquareIcon className="size-4" aria-hidden />}
           >
             Kamera bermasalah? Kirim dari galeri
-          </button>
+          </Button>
           <input
             ref={fileRef}
             type="file"

@@ -1,6 +1,10 @@
 import { notFound } from "next/navigation";
+import { FilmReelIcon } from "@phosphor-icons/react/ssr";
 import { createAdminClient } from "@/lib/supabase/admin";
 import PendingBadge from "@/components/camera/PendingBadge";
+import Reveal from "@/components/ui/Reveal";
+import RollWind from "@/components/guest/RollWind";
+import { Eyebrow } from "@/components/ui/Panel";
 import type { EventRow } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
@@ -22,17 +26,27 @@ export default async function FinishedPage({
   if (!event) notFound();
 
   return (
-    <main className="flex min-h-dvh flex-col items-center justify-center gap-6 p-6 text-center shell-texture safe-top safe-bottom">
-      <div className="max-w-sm space-y-4">
-        <p className="font-mono text-[10px] uppercase tracking-[0.35em] text-film/80">
-          Rol film habis
-        </p>
-        <h1 className="text-2xl font-semibold">Terima kasih 🤍</h1>
-        <p className="text-sm leading-relaxed text-cream/60">
-          {event.film_limit} jepretanmu sudah tersimpan untuk {event.couple_names}.
-          Hasilnya akan &ldquo;dicuci&rdquo; setelah acara selesai.
-        </p>
-        <PendingBadge />
+    <main className="shell-texture flex min-h-dvh flex-col px-5 pt-8 pb-10 safe-top safe-bottom">
+      <div className="mx-auto flex w-full max-w-sm flex-1 flex-col justify-center gap-8">
+        <RollWind>
+          <FilmReelIcon className="size-14 text-film" weight="duotone" aria-hidden />
+        </RollWind>
+
+        <Reveal index={1} className="space-y-3">
+          <Eyebrow>Rol film habis</Eyebrow>
+          <h1 className="text-[2.25rem] leading-[1.08] font-semibold tracking-tight">
+            Terima kasih sudah memotret
+          </h1>
+          <p className="max-w-[36ch] text-[15px] leading-relaxed text-cream/65">
+            {event.film_limit} jepretanmu tersimpan untuk{" "}
+            <span className="text-cream">{event.couple_names}</span>. Hasilnya dicuci setelah
+            acara selesai.
+          </p>
+        </Reveal>
+
+        <Reveal index={2}>
+          <PendingBadge />
+        </Reveal>
       </div>
     </main>
   );

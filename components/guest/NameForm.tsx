@@ -1,6 +1,9 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { ApertureIcon } from "@phosphor-icons/react/ssr";
+import Button from "@/components/ui/Button";
+import { FieldError, Hint, Input, Label } from "@/components/ui/Field";
 
 const DEVICE_KEY = "dcam_device_id";
 const LAST_NAME_KEY = "dcam_last_name";
@@ -47,7 +50,7 @@ export default function NameForm({ slug, tableLabel }: Props) {
     event.preventDefault();
     const trimmed = inputRef.current?.value.trim() ?? "";
     if (trimmed.length < 2) {
-      setError("Tulis nama kamu dulu ya (minimal 2 huruf).");
+      setError("Tulis nama kamu dulu, minimal 2 huruf.");
       inputRef.current?.focus();
       return;
     }
@@ -86,47 +89,42 @@ export default function NameForm({ slug, tableLabel }: Props) {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="w-full space-y-4">
-      <div>
-        <label
-          htmlFor="guest-name"
-          className="mb-2 block text-xs font-medium uppercase tracking-[0.2em] text-cream/50"
-        >
-          Nama kamu
-        </label>
-        <input
-          ref={inputRef}
-          id="guest-name"
-          name="name"
-          type="text"
-          inputMode="text"
-          autoComplete="name"
-          enterKeyHint="go"
-          maxLength={40}
-          defaultValue=""
-          placeholder="Misal: Dinda"
-          className="w-full rounded-xl border border-cream/15 bg-shell-2 px-4 py-4 text-lg text-cream outline-none placeholder:text-cream/25 focus:border-film/70"
-        />
-      </div>
-
+    <form onSubmit={handleSubmit} className="w-full" noValidate>
+      <Label htmlFor="guest-name">Nama kamu</Label>
+      <Input
+        ref={inputRef}
+        id="guest-name"
+        name="name"
+        type="text"
+        inputMode="text"
+        autoComplete="name"
+        enterKeyHint="go"
+        maxLength={40}
+        defaultValue=""
+        placeholder="Misal: Dinda Puspita"
+        aria-invalid={error ? true : undefined}
+        aria-describedby="guest-name-hint"
+        large
+        onInput={() => {
+          if (error) setError(null);
+        }}
+      />
       {error ? (
-        <p role="alert" className="text-sm text-film">
-          {error}
-        </p>
-      ) : null}
+        <FieldError>{error}</FieldError>
+      ) : (
+        <Hint id="guest-name-hint">Supaya pengantin tahu foto ini dari siapa.</Hint>
+      )}
 
-      <button
+      <Button
         type="submit"
-        disabled={busy}
-        className="w-full rounded-xl bg-film px-4 py-4 text-base font-semibold text-shell transition active:scale-[0.99] disabled:opacity-60"
+        size="lg"
+        block
+        loading={busy}
+        icon={<ApertureIcon className="size-5" weight="bold" aria-hidden />}
+        className="mt-5"
       >
-        {busy ? "Menyiapkan kamera…" : "Ambil kamera"}
-      </button>
-
-      <p className="text-center text-xs leading-relaxed text-cream/40">
-        Nama dipakai supaya pengantin tahu foto ini dari siapa.
-        Foto langsung tersimpan dan baru &ldquo;dicuci&rdquo; setelah acara.
-      </p>
+        {busy ? "Menyiapkan kamera" : "Ambil kamera"}
+      </Button>
     </form>
   );
 }

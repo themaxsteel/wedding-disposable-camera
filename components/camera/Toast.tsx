@@ -1,5 +1,7 @@
 "use client";
 import { useEffect } from "react";
+import { AnimatePresence, m } from "motion/react";
+import { CheckCircleIcon, WarningCircleIcon } from "@phosphor-icons/react/ssr";
 
 interface Props {
   message: string | null;
@@ -14,21 +16,33 @@ export default function Toast({ message, tone = "ok", onDone }: Props) {
     return () => clearTimeout(timer);
   }, [message, onDone]);
 
-  if (!message) return null;
-
   return (
     <div
       role="status"
       aria-live="polite"
-      className="pointer-events-none fixed inset-x-0 bottom-36 z-40 flex justify-center px-6"
+      className="pointer-events-none fixed inset-x-0 top-20 z-(--z-toast) flex justify-center px-6"
     >
-      <div
-        className={`toast-in rounded-full px-4 py-2 text-sm font-medium shadow-lg backdrop-blur ${
-          tone === "ok" ? "bg-cream/95 text-shell" : "bg-film/95 text-shell"
-        }`}
-      >
-        {message}
-      </div>
+      <AnimatePresence>
+        {message ? (
+          <m.div
+            key={message}
+            initial={{ opacity: 0, y: -10, scale: 0.96 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -6 }}
+            transition={{ type: "spring", stiffness: 500, damping: 34 }}
+            className={`flex items-center gap-2 rounded-full py-2 pr-4 pl-3 text-sm font-medium shadow-[0_12px_30px_-10px_rgb(0_0_0/0.8)] ${
+              tone === "ok" ? "bg-cream text-shell" : "bg-film text-shell"
+            }`}
+          >
+            {tone === "ok" ? (
+              <CheckCircleIcon className="size-4.5" weight="fill" aria-hidden />
+            ) : (
+              <WarningCircleIcon className="size-4.5" weight="fill" aria-hidden />
+            )}
+            {message}
+          </m.div>
+        ) : null}
+      </AnimatePresence>
     </div>
   );
 }

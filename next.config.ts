@@ -1,7 +1,10 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  experimental: {
+    // Satu file per ikon, bukan seluruh barrel Phosphor, saat dev dan build.
+    optimizePackageImports: ["@phosphor-icons/react"],
+  },
 };
 
 export default nextConfig;

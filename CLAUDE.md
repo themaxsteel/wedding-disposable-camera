@@ -21,6 +21,9 @@ upload, akses, atau undangan.
 - Izin admin dicek lewat `getEventAccess()` / `getAdminContext()`, yang membaca
   dengan client ber-RLS. Jangan mengganti pengecekan itu dengan query service role.
 - Menjepret tidak boleh menunggu jaringan: foto masuk antrean IndexedDB dulu.
+- **Foto hanya boleh keluar dari antrean karena berhasil terkirim atau kode fatal**
+  (`FILM_HABIS`, `SESI_TIDAK_VALID`, `EVENT_TUTUP`). Error jaringan dan error server
+  hanya mengatur jeda (lihat `lib/upload/uploader.ts`).
 
 ## Database
 - Perubahan skema = migrasi baru di `supabase/migrations/` lalu `npm run db:push`.

@@ -130,6 +130,38 @@ await new Promise((r) => { const q = indexedDB.open("dcam-queue"); q.onsuccess =
 Keterbatasan: tidak menguji izin kamera, torch, orientasi, atau perilaku iOS
 saat app di-background. Itu wajib diuji di HP nyata.
 
+### Mensimulasikan jaringan putus
+
+Masih di DevTools, setelah menjepret. Tanpa menunggu jeda asli, paksa uploader
+mencoba ulang berkali-kali:
+
+```js
+const idb = (mode, fn) => new Promise((res) => { const o = indexedDB.open("dcam-queue");
+  o.onsuccess = () => { const tx = o.result.transaction("jobs", mode); const r = fn(tx.objectStore("jobs"));
+    tx.oncomplete = () => res(r?.result ?? r); }; });
+const jobs = () => idb("readonly", (s) => s.getAll());
+const forceReady = async () => { const js = await jobs();
+  await idb("readwrite", (s) => js.forEach((j) => s.put({ ...j, nextAttemptAt: 0 }))); };
+
+const realFetch = window.fetch;
+window.fetch = () => Promise.reject(new TypeError("Failed to fetch")); // sinyal putus
+for (let i = 0; i < 20; i++) { await forceReady(); dispatchEvent(new Event("online")); await new Promise((r) => setTimeout(r, 400)); }
+console.log(await jobs()); // harus tetap ada, attempts 0, networkRetries 20
+
+window.fetch = realFetch;  // sinyal kembali
+await forceReady(); dispatchEvent(new Event("online"));
+```
+
+| Skenario (16/09/2026) | Hasil |
+|---|---|
+| 20× gagal jaringan, `navigator.onLine` true (WiFi tanpa internet) | Foto tetap di antrean, `attempts` 0, indikator offline tampil |
+| `navigator.onLine` false | 0 permintaan dikirim |
+| 15× HTTP 500 dari server | Foto tetap di antrean, jeda naik ke ±5 menit |
+| Jaringan kembali | Antrean kosong, indikator hilang |
+| Putus tepat saat upload versi film | Tidak di-commit; setelah pulih foto tersimpan lengkap (asli, film, 2 thumbnail) |
+
+Sebelum perbaikan, skenario pertama membuang foto pada kegagalan ke-12.
+
 ## 5. Uji di perangkat nyata
 
 ### Matriks minimum sebelum acara sungguhan
@@ -155,7 +187,7 @@ saat app di-background. Itu wajib diuji di HP nyata.
 | D6 | Flash ON di iPhone kamera depan | Layar putih sesaat |
 | D7 | Pindah ke WhatsApp 30 dtk, kembali | Preview hidup lagi tanpa reload |
 | D8 | Kunci layar 1 menit, buka | Preview hidup lagi |
-| D9 | Mode pesawat → jepret 2× → nonaktifkan **dalam 5 menit** | Foto masuk, tidak dobel |
+| D9 | Mode pesawat → jepret 2× → tunggu ≥10 menit dengan halaman terbuka → nonaktifkan | Selama offline tampil "offline · 2 tersimpan di HP"; setelahnya foto masuk, tidak dobel |
 | D10 | Tolak izin kamera | Pesan + petunjuk pengaturan sesuai platform, tombol "Kirim dari galeri" |
 | D11 | Buka dari WhatsApp | Banner "Buka di Safari / Chrome" + tombol salin link |
 | D12 | Habiskan jatah film (acara uji dengan jatah 3) | Pindah ke layar "Rol film habis", "Semua foto terkirim" |
@@ -203,6 +235,6 @@ Yang paling bernilai bila nanti ditambahkan, berurutan:
 1. **Uji integrasi API tamu** (skenario bagian 2) sebagai script `node` yang bisa
    dijalankan terhadap preview deploy.
 2. **Uji RLS** (bagian 3) sebagai file SQL dengan `pgTAP` atau script yang gagal bila hasil menyimpang.
-3. **Unit test uploader** — terutama perilaku offline (lihat
-   [keterbatasan](ARSITEKTUR.md#keterbatasan-yang-diketahui)).
+3. **Unit test uploader** — skenario simulasi jaringan di bagian 4 dijadikan test
+   otomatis (fake IndexedDB + fetch tiruan).
 4. **Playwright** dengan `--use-fake-device-for-media-stream` untuk alur kamera.

@@ -9,10 +9,16 @@ Semua perubahan di-deploy otomatis ke produksi saat masuk `main`.
 - Dokumentasi lengkap di `docs/`: setup, arsitektur, database, API, keamanan,
   pengujian, runbook operasional, dan panduan pengantin.
 - Aturan kerja project untuk agen AI di `CLAUDE.md`.
+- Indikator "offline · N tersimpan di HP" di layar kamera dan pesan serupa di
+  layar selesai.
 
-### Diketahui
-- Uploader membuang foto setelah 12 kegagalan jaringan (±7–9 menit offline
-  dengan halaman terbuka). Lihat [keterbatasan](docs/ARSITEKTUR.md#keterbatasan-yang-diketahui).
+### Diperbaiki
+- **Foto tamu hilang setelah ±7–9 menit offline.** Uploader menghitung kegagalan
+  jaringan sebagai percobaan gagal dan membuang foto pada kegagalan ke-12. Kini
+  kegagalan jaringan tidak dihitung, foto hanya keluar dari antrean bila terkirim
+  atau ditolak permanen (film habis, sesi mati, acara tutup), uploader tidak
+  mencoba saat HP offline, dan koneksi yang putus di tengah upload versi film
+  mengulang seluruh foto alih-alih menyimpan tanpa versi film.
 
 ## [0.1.0] — 2026-09-16
 

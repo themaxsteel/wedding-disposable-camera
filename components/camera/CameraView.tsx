@@ -48,6 +48,7 @@ export default function CameraView({ session }: { session: GuestSessionInfo }) {
 
   const [remaining, setRemaining] = useState(session.remaining);
   const [pending, setPending] = useState(0);
+  const [offline, setOffline] = useState(false);
   const [busy, setBusy] = useState(false);
   const [flashOn, setFlashOn] = useState(false);
   const [screenFlash, setScreenFlash] = useState(false);
@@ -68,6 +69,7 @@ export default function CameraView({ session }: { session: GuestSessionInfo }) {
 
     return uploader.subscribe((state) => {
       setPending(state.pending);
+      setOffline(state.offline);
       // Hitungan lokal sudah memotong jepretan yang masih mengantre, jadi nilai
       // server hanya boleh mengoreksi ke bawah — kalau tidak, counter sempat
       // naik lagi setiap satu upload selesai.
@@ -241,7 +243,12 @@ export default function CameraView({ session }: { session: GuestSessionInfo }) {
   return (
     <main className="camera-surface relative flex h-dvh flex-col bg-black">
       <header className="flex items-center justify-between px-4 safe-top">
-        <FilmCounter remaining={remaining} limit={session.filmLimit} pending={pending} />
+        <FilmCounter
+          remaining={remaining}
+          limit={session.filmLimit}
+          pending={pending}
+          offline={offline}
+        />
         <div className="text-right">
           <p className="max-w-36 truncate text-sm text-cream/80">
             {session.displayName}

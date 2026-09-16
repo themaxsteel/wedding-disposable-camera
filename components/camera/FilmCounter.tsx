@@ -2,10 +2,12 @@ interface Props {
   remaining: number;
   limit: number;
   pending: number;
+  /** Server tidak terjangkau: foto aman di HP dan dikirim ulang otomatis. */
+  offline: boolean;
 }
 
 /** Jendela counter kecil seperti di bodi kamera film. */
-export default function FilmCounter({ remaining, limit, pending }: Props) {
+export default function FilmCounter({ remaining, limit, pending, offline }: Props) {
   const used = Math.max(0, limit - remaining);
   const progress = limit > 0 ? used / limit : 0;
 
@@ -26,8 +28,12 @@ export default function FilmCounter({ remaining, limit, pending }: Props) {
       </div>
 
       {pending > 0 ? (
-        <span className="font-mono text-[10px] uppercase tracking-wider text-cream/40">
-          {pending} menunggu
+        <span
+          className={`font-mono text-[10px] uppercase tracking-wider ${
+            offline ? "text-film" : "text-cream/40"
+          }`}
+        >
+          {offline ? `offline · ${pending} tersimpan di HP` : `${pending} menunggu`}
         </span>
       ) : null}
     </div>

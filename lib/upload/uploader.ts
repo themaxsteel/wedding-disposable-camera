@@ -5,15 +5,99 @@ import { allJobs, deleteJob, putJob, type UploadJob } from "@/lib/upload/queue";
 import type { ApiErrorCode } from "@/lib/types";
 
 const CONCURRENCY = 2;
-const MAX_BACKOFF_MS = 60_000;
 const BASE_BACKOFF_MS = 2_000;
-/** Setelah sekian kali gagal, job dianggap busuk dan dibuang agar antrean tidak macet. */
-const MAX_ATTEMPTS = 12;
+/** Jaringan putus: coba lagi cukup sering supaya foto terkirim begitu sinyal kembali. */
+const MAX_NETWORK_BACKOFF_MS = 30_000;
+/** Server menolak / error: melambat, tapi tidak pernah menyerah. */
+const MAX_SERVER_BACKOFF_MS = 5 * 60_000;
+/** Saat browser melaporkan offline, cek ulang sesekali selain menunggu event "online". */
+const OFFLINE_RECHECK_MS = 15_000;
+const RATE_LIMIT_RETRY_MS = 700;
+
+/**
+ * - network  : tidak ada respons HTTP (offline, WiFi tanpa internet, koneksi terputus)
+ * - server   : ada respons tapi gagal (5xx, 4xx tak terduga, token upload kedaluwarsa)
+ * - retrySoon: tabrakan rate limit antar upload paralel
+ * - fatal    : mengulang tidak akan pernah berhasil (film habis, sesi mati, acara tutup)
+ *
+ * Hanya "fatal" yang boleh membuang foto dari antrean.
+ */
+type FailureKind = "network" | "server" | "retrySoon" | "fatal";
+
+class UploadFailure extends Error {
+  constructor(
+    readonly kind: FailureKind,
+    message: string,
+    readonly code?: ApiErrorCode,
+  ) {
+    super(message);
+  }
+}
+
+const FATAL_CODES: ApiErrorCode[] = ["FILM_HABIS", "SESI_TIDAK_VALID", "EVENT_TUTUP"];
+
+function browserOffline(): boolean {
+  return typeof navigator !== "undefined" && navigator.onLine === false;
+}
+
+/** Apakah error ini berarti permintaan tidak pernah mendapat respons HTTP. */
+function isNetworkError(error: unknown): boolean {
+  if (browserOffline()) return true;
+  // fetch() menolak dengan TypeError ketika tidak ada respons sama sekali.
+  if (error instanceof TypeError) return true;
+
+  const candidate = error as {
+    name?: string;
+    message?: string;
+    originalError?: unknown;
+  } | null;
+  if (!candidate) return false;
+  if (candidate.originalError && isNetworkError(candidate.originalError)) return true;
+  // storage-js: StorageApiError = ada respons HTTP; StorageUnknownError = tidak ada.
+  if (candidate.name === "StorageUnknownError") return true;
+  return /failed to fetch|networkerror|load failed|network request failed|network connection was lost/i.test(
+    candidate.message ?? "",
+  );
+}
+
+function toFailure(error: unknown): UploadFailure {
+  if (error instanceof UploadFailure) return error;
+  return isNetworkError(error)
+    ? new UploadFailure("network", "Jaringan tidak tersedia.")
+    : new UploadFailure("server", error instanceof Error ? error.message : "Upload gagal.");
+}
+
+async function postJson(url: string, body: unknown) {
+  let response: Response;
+  try {
+    response = await fetch(url, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(body),
+    });
+  } catch (error) {
+    throw toFailure(error);
+  }
+
+  const data = await response.json().catch(() => null);
+  if (response.ok && data?.ok) return data;
+
+  const code: ApiErrorCode = data?.code ?? "GAGAL";
+  if (FATAL_CODES.includes(code)) throw new UploadFailure("fatal", code, code);
+  if (code === "TERLALU_CEPAT") throw new UploadFailure("retrySoon", code, code);
+  throw new UploadFailure("server", `${url} → HTTP ${response.status}`, code);
+}
+
+function withJitter(ms: number): number {
+  return ms + Math.random() * 0.3 * ms;
+}
 
 export interface UploaderState {
   pending: number;
   uploading: number;
   failing: boolean;
+  /** Server tidak bisa dihubungi — foto tetap aman di HP dan akan dikirim ulang. */
+  offline: boolean;
   /** Sisa jatah film menurut server — sumber kebenaran untuk counter di UI. */
   remaining: number | null;
   fatal: ApiErrorCode | null;
@@ -32,6 +116,7 @@ class Uploader {
     pending: 0,
     uploading: 0,
     failing: false,
+    offline: false,
     remaining: null,
     fatal: null,
   };
@@ -61,7 +146,11 @@ class Uploader {
     this.bound = true;
 
     const poke = () => void this.drain();
-    window.addEventListener("online", poke);
+    window.addEventListener("online", () => {
+      this.patch({ offline: false });
+      poke();
+    });
+    window.addEventListener("offline", () => this.patch({ offline: true }));
     document.addEventListener("visibilitychange", () => {
       if (document.visibilityState === "visible") poke();
     });
@@ -71,6 +160,7 @@ class Uploader {
         event.returnValue = "";
       }
     });
+    this.patch({ offline: browserOffline() });
     poke();
   }
 
@@ -102,7 +192,14 @@ class Uploader {
         const jobs = await allJobs();
         this.patch({ pending: jobs.length, uploading: this.inFlight.size });
         if (jobs.length === 0) {
-          this.patch({ failing: false });
+          this.patch({ failing: false, offline: browserOffline() });
+          return;
+        }
+
+        // Tidak ada gunanya mencoba saat browser tahu dirinya offline.
+        if (browserOffline()) {
+          this.patch({ offline: true });
+          this.scheduleDrain(OFFLINE_RECHECK_MS);
           return;
         }
 
@@ -138,37 +235,42 @@ class Uploader {
     try {
       await this.uploadOne(job);
       await deleteJob(job.clientPhotoId);
-      this.patch({ failing: false });
+      this.patch({ failing: false, offline: false });
     } catch (error) {
-      const { fatalCode: fatal, retryAfterMs } = error as {
-        fatalCode?: ApiErrorCode;
-        retryAfterMs?: number;
-      };
+      const failure = toFailure(error);
 
-      if (retryAfterMs) {
-        await putJob({ ...job, nextAttemptAt: Date.now() + retryAfterMs });
-        this.scheduleDrain(retryAfterMs);
-      } else if (fatal) {
-        // Film habis / sesi mati: mengulang tidak akan pernah berhasil.
-        await deleteJob(job.clientPhotoId);
-        this.patch({ fatal });
-      } else {
-        const attempts = job.attempts + 1;
-        if (attempts >= MAX_ATTEMPTS) {
+      switch (failure.kind) {
+        case "fatal":
           await deleteJob(job.clientPhotoId);
-        } else {
-          const backoff = Math.min(
-            MAX_BACKOFF_MS,
-            BASE_BACKOFF_MS * 2 ** (attempts - 1),
+          this.patch({ fatal: failure.code ?? null });
+          break;
+
+        case "retrySoon":
+          await putJob({ ...job, nextAttemptAt: Date.now() + RATE_LIMIT_RETRY_MS });
+          this.scheduleDrain(RATE_LIMIT_RETRY_MS);
+          break;
+
+        case "network": {
+          // Tidak dihitung sebagai percobaan gagal: sinyal yang hilang bukan
+          // kesalahan fotonya. networkRetries hanya mengatur jeda.
+          const networkRetries = (job.networkRetries ?? 0) + 1;
+          const delay = withJitter(
+            Math.min(MAX_NETWORK_BACKOFF_MS, BASE_BACKOFF_MS * 2 ** (networkRetries - 1)),
           );
-          const jitter = Math.random() * 0.3 * backoff;
-          await putJob({
-            ...job,
-            attempts,
-            nextAttemptAt: Date.now() + backoff + jitter,
-          });
+          await putJob({ ...job, networkRetries, nextAttemptAt: Date.now() + delay });
+          this.patch({ failing: true, offline: true });
+          break;
         }
-        this.patch({ failing: true });
+
+        case "server": {
+          const attempts = job.attempts + 1;
+          const delay = withJitter(
+            Math.min(MAX_SERVER_BACKOFF_MS, BASE_BACKOFF_MS * 2 ** (attempts - 1)),
+          );
+          await putJob({ ...job, attempts, nextAttemptAt: Date.now() + delay });
+          this.patch({ failing: true, offline: false });
+          break;
+        }
       }
     } finally {
       this.inFlight.delete(job.clientPhotoId);
@@ -177,102 +279,72 @@ class Uploader {
     }
   }
 
-  private async uploadOne(job: UploadJob) {
-    const initResponse = await fetch("/api/photos/init", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({
-        clientPhotoId: job.clientPhotoId,
-        takenAt: job.takenAt,
-        facing: job.facing,
-        source: job.source,
-        withFiltered: job.film !== null,
-        withThumbs: Boolean(job.origThumb),
-      }),
-    });
-
-    const init = await initResponse.json().catch(() => null);
-
-    if (!initResponse.ok || !init?.ok) {
-      const code: ApiErrorCode = init?.code ?? "GAGAL";
-      if (code === "FILM_HABIS" || code === "SESI_TIDAK_VALID" || code === "EVENT_TUTUP") {
-        throw Object.assign(new Error(code), { fatalCode: code });
-      }
-      // Tabrakan rate limit antar upload paralel: coba lagi sebentar lagi,
-      // tanpa menambah hitungan kegagalan job ini.
-      if (code === "TERLALU_CEPAT") {
-        throw Object.assign(new Error(code), { retryAfterMs: 700 });
-      }
-      throw new Error(code);
+  /**
+   * Unggah satu file. File utama wajib berhasil. File "bonus" (versi film,
+   * thumbnail) boleh gagal karena server — foto asli tetap tersimpan — tapi
+   * kalau gagal karena jaringan, seluruh job diulang: melanjutkan ke commit
+   * justru membuat versi itu hilang permanen.
+   */
+  private async upload(
+    target: { path: string; token: string },
+    blob: Blob,
+    required: boolean,
+  ): Promise<boolean> {
+    const storage = getSupabaseBrowser().storage.from(PHOTO_BUCKET);
+    let error: unknown = null;
+    try {
+      ({ error } = await storage.uploadToSignedUrl(target.path, target.token, blob, {
+        contentType: "image/jpeg",
+      }));
+    } catch (thrown) {
+      error = thrown;
     }
+
+    if (!error) return true;
+    if (required || isNetworkError(error)) throw toFailure(error);
+    return false;
+  }
+
+  private async uploadOne(job: UploadJob) {
+    const init = await postJson("/api/photos/init", {
+      clientPhotoId: job.clientPhotoId,
+      takenAt: job.takenAt,
+      facing: job.facing,
+      source: job.source,
+      withFiltered: job.film !== null,
+      withThumbs: Boolean(job.origThumb),
+    });
 
     if (typeof init.remaining === "number") {
       this.patch({ remaining: init.remaining });
     }
 
-    const storage = getSupabaseBrowser().storage.from(PHOTO_BUCKET);
+    await this.upload(init.orig, job.orig, true);
 
-    const origUpload = await storage.uploadToSignedUrl(
-      init.orig.path,
-      init.orig.token,
-      job.orig,
-      { contentType: "image/jpeg" },
-    );
-    if (origUpload.error) throw origUpload.error;
+    const filteredUploaded =
+      job.film && init.film ? await this.upload(init.film, job.film, false) : false;
 
-    let filteredUploaded = false;
-    if (job.film && init.film) {
-      const filmUpload = await storage.uploadToSignedUrl(
-        init.film.path,
-        init.film.token,
-        job.film,
-        { contentType: "image/jpeg" },
-      );
-      // Versi berfilter itu bonus; kalau gagal, foto asli tetap tersimpan.
-      filteredUploaded = !filmUpload.error;
-    }
-
-    // Thumbnail juga bonus: galeri kembali memakai file penuh kalau gagal.
-    // Dianggap lengkap hanya bila setiap varian yang tersimpan punya thumbnail.
+    // Thumbnail dianggap lengkap hanya bila setiap varian yang tersimpan punya thumbnail.
     let thumbsUploaded = false;
     if (job.origThumb && init.origThumb) {
-      const origThumbUpload = await storage.uploadToSignedUrl(
-        init.origThumb.path,
-        init.origThumb.token,
-        job.origThumb,
-        { contentType: "image/jpeg" },
-      );
-      thumbsUploaded = !origThumbUpload.error;
-
+      thumbsUploaded = await this.upload(init.origThumb, job.origThumb, false);
       if (thumbsUploaded && filteredUploaded) {
-        if (job.filmThumb && init.filmThumb) {
-          const filmThumbUpload = await storage.uploadToSignedUrl(
-            init.filmThumb.path,
-            init.filmThumb.token,
-            job.filmThumb,
-            { contentType: "image/jpeg" },
-          );
-          thumbsUploaded = !filmThumbUpload.error;
-        } else {
-          thumbsUploaded = false;
-        }
+        thumbsUploaded =
+          job.filmThumb && init.filmThumb
+            ? await this.upload(init.filmThumb, job.filmThumb, false)
+            : false;
       }
     }
 
-    const commitResponse = await fetch("/api/photos/commit", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({
-        photoId: init.photoId,
-        caption: job.caption,
-        width: job.width,
-        height: job.height,
-        bytes: job.orig.size,
-        filteredUploaded,
-        thumbsUploaded,
-      }),
+    await postJson("/api/photos/commit", {
+      photoId: init.photoId,
+      caption: job.caption,
+      width: job.width,
+      height: job.height,
+      bytes: job.orig.size,
+      filteredUploaded,
+      thumbsUploaded,
     });
-    if (!commitResponse.ok) throw new Error("COMMIT_GAGAL");
   }
 }
 

@@ -18,8 +18,8 @@ Storage, Auth) · Vercel.
 - Kamera belakang default, putar ke kamera depan, flash (senter Android / layar putih iOS)
 - Jatah foto per tamu (default 27) dan counter "exposure"
 - Setiap jepretan menyimpan versi asli + versi film (grain, vignette, light leak, date stamp)
-- Upload di latar belakang dengan antrean offline — sinyal putus sebentar tidak menghilangkan foto
-  (lihat [keterbatasan](docs/ARSITEKTUR.md#keterbatasan-yang-diketahui) untuk offline lama)
+- Upload di latar belakang dengan antrean offline — foto tetap aman di HP selama sinyal
+  putus dan terkirim otomatis saat sinyal kembali, selama kamera acara masih dibuka
 - Caption opsional per foto; jalur cadangan kirim dari galeri bila kamera diblokir
 
 **Pengantin / WO** — `/admin`

@@ -55,7 +55,7 @@ Pakai acara uji terpisah, **bukan** acara pengantin (jatah film terpakai).
 - [ ] 3–4 HP berbeda: minimal 1 iPhone Safari, 1 Android Chrome, 1 HP kelas bawah
 - [ ] Scan QR → nama → kamera menyala → jepret 3×
 - [ ] Buka link dari chat WhatsApp → muncul banner "Buka di Safari/Chrome"
-- [ ] Mode pesawat → jepret 2× → matikan mode pesawat **dalam 5 menit** → foto masuk tanpa dobel
+- [ ] Mode pesawat → jepret 2× → muncul "offline · 2 tersimpan di HP" → tunggu beberapa menit → matikan mode pesawat → foto masuk tanpa dobel
 - [ ] Foto muncul di galeri dengan nama yang benar, toggle Asli/Film jalan
 - [ ] Unduh ZIP dan buka isinya
 - [ ] Cek sinyal di lokasi acara bila memungkinkan
@@ -114,7 +114,7 @@ Pengaturan → **Hapus acara** → ketik alamat acara → **Hapus acara permanen
 | Tidak bisa sama sekali | HP/browser sangat lama | Tombol **Kamera bermasalah? Kirim dari galeri** |
 | "Kamera belum dibuka / sudah ditutup" | Di luar jadwal atau nonaktif | Cek jam di Pengaturan (zona waktu perangkat admin) |
 | "Rol film habis" padahal baru sedikit | Tamu scan ulang dari HP yang sama dengan nama sama → melanjutkan rol lama | Sesuai desain. Jika perlu, naikkan jatah film acara |
-| "Menunggu" tidak berkurang | Sinyal lemah | Biarkan halaman terbuka; foto terkirim otomatis saat sinyal kembali |
+| "Menunggu" / "offline · N tersimpan di HP" tidak berkurang | Sinyal lemah atau hilang | Foto aman di HP. Biarkan halaman terbuka, atau buka lagi link acara setelah dapat sinyal — terkirim otomatis |
 | Foto tidak muncul di galeri | Masih mengantre di HP tamu, atau terbuang (lihat [keterbatasan](ARSITEKTUR.md#keterbatasan-yang-diketahui)) | Cek `pending_lama`; minta tamu membuka lagi halaman kamera |
 
 ### Pengantin / admin

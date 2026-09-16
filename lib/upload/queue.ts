@@ -19,7 +19,10 @@ export interface UploadJob {
   source: "camera" | "upload";
   width: number;
   height: number;
+  /** Kegagalan dengan respons server — hanya untuk mengatur jeda, tidak pernah membuang job. */
   attempts: number;
+  /** Kegagalan tanpa respons (offline) — hanya untuk mengatur jeda. Opsional untuk job lama. */
+  networkRetries?: number;
   nextAttemptAt: number;
   createdAt: number;
 }

@@ -2,6 +2,9 @@
 import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { getSupabaseBrowser } from "@/lib/supabase/client";
+import Button from "@/components/ui/Button";
+import { FieldError, Input, Label } from "@/components/ui/Field";
+import { Notice } from "@/components/ui/Panel";
 
 export default function LoginForm() {
   const router = useRouter();
@@ -35,56 +38,43 @@ export default function LoginForm() {
   const linkExpired = searchParams.get("link") === "kedaluwarsa";
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
+    <form onSubmit={handleSubmit} className="space-y-5">
       {linkExpired ? (
-        <p role="alert" className="rounded-lg border border-film/40 bg-film/10 p-3 text-sm text-cream/80">
-          Link masuk sudah kedaluwarsa atau sudah pernah dipakai. Minta link baru ke
-          admin, atau login dengan password kalau kamu sudah membuatnya.
-        </p>
+        <Notice tone="warn" role="alert" title="Link masuk sudah tidak berlaku">
+          Link itu kedaluwarsa atau sudah pernah dipakai. Minta link baru ke admin, atau
+          masuk dengan password kalau kamu sudah membuatnya.
+        </Notice>
       ) : null}
       <div>
-        <label htmlFor="email" className="mb-1 block text-xs text-cream/50">
-          Email
-        </label>
-        <input
+        <Label htmlFor="email">Email</Label>
+        <Input
           id="email"
           type="email"
           autoComplete="email"
           required
           value={email}
           onChange={(event) => setEmail(event.target.value)}
-          className="w-full rounded-lg border border-cream/15 bg-black/30 px-3 py-3 text-sm outline-none focus:border-film/60"
+          aria-invalid={error ? true : undefined}
         />
       </div>
 
       <div>
-        <label htmlFor="password" className="mb-1 block text-xs text-cream/50">
-          Password
-        </label>
-        <input
+        <Label htmlFor="password">Password</Label>
+        <Input
           id="password"
           type="password"
           autoComplete="current-password"
           required
           value={password}
           onChange={(event) => setPassword(event.target.value)}
-          className="w-full rounded-lg border border-cream/15 bg-black/30 px-3 py-3 text-sm outline-none focus:border-film/60"
+          aria-invalid={error ? true : undefined}
         />
+        <FieldError>{error}</FieldError>
       </div>
 
-      {error ? (
-        <p role="alert" className="text-sm text-film">
-          {error}
-        </p>
-      ) : null}
-
-      <button
-        type="submit"
-        disabled={busy}
-        className="w-full rounded-lg bg-film px-4 py-3 text-sm font-semibold text-shell disabled:opacity-60"
-      >
-        {busy ? "Memeriksa…" : "Masuk"}
-      </button>
+      <Button type="submit" block loading={busy}>
+        {busy ? "Memeriksa" : "Masuk"}
+      </Button>
     </form>
   );
 }

@@ -1,6 +1,9 @@
 "use client";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { TrashIcon } from "@phosphor-icons/react/ssr";
+import Button from "@/components/ui/Button";
+import { FieldError, Input, Label } from "@/components/ui/Field";
 
 interface Props {
   eventId: string;
@@ -46,35 +49,39 @@ export default function DeleteEventPanel({
       router.replace(`/admin?dihapus=${encodeURIComponent(coupleNames)}`);
       router.refresh();
     } catch {
-      setError("Koneksi terputus. Acara mungkin baru terhapus sebagian — tekan hapus lagi.");
+      setError("Koneksi terputus. Acara mungkin baru terhapus sebagian, tekan hapus lagi.");
       setBusy(false);
     }
   }
 
   return (
-    <div className="space-y-4">
-      <div className="space-y-1 text-sm text-cream/70">
-        <p>Menghapus acara ini akan menghilangkan secara permanen:</p>
-        <ul className="list-disc space-y-0.5 pl-5 text-cream/60">
-          <li>
-            <b className="text-cream">{photoCount}</b> foto beserta versi film dan thumbnail-nya
+    <div className="space-y-5">
+      <div className="space-y-3 text-sm text-cream/70">
+        <p>Menghapus acara ini menghilangkan secara permanen:</p>
+        <ul className="grid gap-2 sm:grid-cols-3">
+          <li className="rounded-xl border border-danger/20 bg-shell/50 p-3">
+            <span className="block font-mono text-xl text-cream tabular-nums">{photoCount}</span>
+            <span className="text-xs text-cream/55">foto, versi film, dan thumbnail</span>
           </li>
-          <li>
-            data <b className="text-cream">{guestCount}</b> tamu dan akses semua anggota
+          <li className="rounded-xl border border-danger/20 bg-shell/50 p-3">
+            <span className="block font-mono text-xl text-cream tabular-nums">{guestCount}</span>
+            <span className="text-xs text-cream/55">data tamu dan akses anggota</span>
           </li>
-          <li>
-            alamat <span className="font-mono">/e/{slug}</span> — QR yang sudah dicetak berhenti
-            berfungsi
+          <li className="rounded-xl border border-danger/20 bg-shell/50 p-3">
+            <span className="block truncate font-mono text-sm leading-7 text-cream">/e/{slug}</span>
+            <span className="text-xs text-cream/55">QR yang sudah dicetak berhenti berfungsi</span>
           </li>
         </ul>
-        <p className="pt-1 text-red-300">Tidak bisa dibatalkan. Unduh ZIP dulu kalau fotonya masih dibutuhkan.</p>
+        <p className="text-danger">
+          Tidak bisa dibatalkan. Unduh ZIP dulu kalau fotonya masih dibutuhkan.
+        </p>
       </div>
 
       <div>
-        <label htmlFor="confirm-slug" className="mb-1 block text-xs text-cream/50">
+        <Label htmlFor="confirm-slug">
           Ketik <span className="font-mono text-cream">{slug}</span> untuk konfirmasi
-        </label>
-        <input
+        </Label>
+        <Input
           id="confirm-slug"
           autoComplete="off"
           autoCapitalize="off"
@@ -82,24 +89,20 @@ export default function DeleteEventPanel({
           value={confirmation}
           onChange={(event) => setConfirmation(event.target.value)}
           disabled={busy}
-          className="w-full rounded-lg border border-red-400/30 bg-black/30 px-3 py-2.5 font-mono text-sm outline-none focus:border-red-400/70"
+          className="font-mono"
         />
+        <FieldError>{error}</FieldError>
       </div>
 
-      {error ? (
-        <p role="alert" className="text-sm text-red-300">
-          {error}
-        </p>
-      ) : null}
-
-      <button
-        type="button"
+      <Button
+        variant="danger"
         onClick={handleDelete}
-        disabled={!matches || busy}
-        className="rounded-lg bg-red-500/90 px-4 py-2.5 text-sm font-semibold text-white transition disabled:cursor-not-allowed disabled:opacity-40"
+        disabled={!matches}
+        loading={busy}
+        icon={<TrashIcon className="size-4" weight="bold" aria-hidden />}
       >
-        {busy ? "Menghapus… jangan tutup halaman ini" : "Hapus acara permanen"}
-      </button>
+        {busy ? "Menghapus, jangan tutup halaman ini" : "Hapus acara permanen"}
+      </Button>
     </div>
   );
 }

@@ -2,7 +2,12 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getAdminContext } from "@/lib/admin/access";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import SignOutButton from "@/components/admin/SignOutButton";
+import { CalendarBlankIcon, CaretRightIcon, PlusIcon } from "@phosphor-icons/react/ssr";
+import PageHeader from "@/components/admin/PageHeader";
+import EventStatus from "@/components/admin/EventStatus";
+import { LinkButton } from "@/components/ui/Button";
+import { Notice } from "@/components/ui/Panel";
+import { EmptyState } from "@/components/ui/States";
 import type { EventRow } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
@@ -38,80 +43,101 @@ export default async function AdminHomePage({
   const countMap = new Map(counts.map((item) => [item.id, item.count]));
 
   return (
-    <main className="mx-auto min-h-dvh max-w-3xl p-6">
-      <div className="mb-8 flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <p className="font-mono text-[10px] uppercase tracking-[0.35em] text-film/80">
-            Ruang cuci film{context.isPlatformAdmin ? " · admin GuestPro" : ""}
-          </p>
-          <h1 className="mt-2 text-2xl font-semibold">
-            {context.isPlatformAdmin ? "Semua acara" : "Acara kamu"}
-          </h1>
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          {context.isPlatformAdmin ? (
-            <Link
+    <main className="mx-auto min-h-dvh max-w-6xl px-4 py-10 sm:px-6">
+      <PageHeader
+        title={context.isPlatformAdmin ? "Semua acara" : "Acara kamu"}
+        meta={
+          context.isPlatformAdmin ? (
+            <span>Kamu masuk sebagai admin platform</span>
+          ) : (
+            <span>Pilih acara untuk melihat foto dari para tamu</span>
+          )
+        }
+        actions={
+          context.isPlatformAdmin ? (
+            <LinkButton
               href="/admin/acara-baru"
-              className="rounded-lg bg-film px-3 py-2 text-xs font-semibold text-shell"
+              icon={<PlusIcon className="size-4" weight="bold" aria-hidden />}
             >
-              + Acara baru
-            </Link>
-          ) : null}
-          <Link
-            href="/admin/akun"
-            className="rounded-lg border border-cream/15 px-3 py-2 text-xs text-cream/60 transition hover:border-film/40 hover:text-cream"
-          >
-            Akun
-          </Link>
-          <SignOutButton />
-        </div>
-      </div>
+              Acara baru
+            </LinkButton>
+          ) : null
+        }
+      />
 
       {dihapus ? (
-        <p role="status" className="mb-4 rounded-xl border border-teal/50 bg-teal/15 p-4 text-sm">
-          Acara <b>{dihapus.slice(0, 80)}</b> beserta semua fotonya sudah dihapus.
-        </p>
+        <Notice tone="ok" className="mb-6">
+          Acara <b className="text-cream">{dihapus.slice(0, 80)}</b> beserta semua fotonya sudah
+          dihapus.
+        </Notice>
       ) : null}
 
       {!events || events.length === 0 ? (
-        <p className="rounded-xl border border-cream/10 bg-shell-2/60 p-6 text-sm text-cream/60">
-          {context.isPlatformAdmin
-            ? "Belum ada acara. Klik “+ Acara baru” untuk membuat yang pertama."
-            : "Belum ada acara yang terhubung ke akun ini. Minta link undangan ke admin GuestPro."}
-        </p>
-      ) : (
-        <ul className="space-y-3">
-          {events.map((event) => (
-            <li key={event.id}>
-              <Link
-                href={`/admin/${event.id}`}
-                className="flex items-center justify-between gap-4 rounded-xl border border-cream/10 bg-shell-2/60 p-5 transition hover:border-film/40"
+        <EmptyState
+          icon={<CalendarBlankIcon weight="duotone" />}
+          title="Belum ada acara"
+          action={
+            context.isPlatformAdmin ? (
+              <LinkButton
+                href="/admin/acara-baru"
+                icon={<PlusIcon className="size-4" weight="bold" aria-hidden />}
               >
-                <div className="min-w-0">
-                  <p className="truncate text-lg font-medium">
-                    {event.couple_names}
-                    {!event.is_active ? (
-                      <span className="ml-2 align-middle font-mono text-[10px] uppercase tracking-wider text-cream/40">
-                        nonaktif
-                      </span>
-                    ) : null}
-                  </p>
-                  <p className="truncate font-mono text-xs text-cream/40">
-                    /e/{event.slug}
-                    {event.event_date ? ` · ${event.event_date}` : ""}
-                  </p>
-                </div>
-                <div className="text-right">
-                  <p className="font-mono text-xl text-film tabular-nums">
-                    {countMap.get(event.id) ?? 0}
-                  </p>
-                  <p className="text-[10px] uppercase tracking-wider text-cream/40">foto</p>
-                </div>
-              </Link>
-            </li>
-          ))}
+                Buat acara pertama
+              </LinkButton>
+            ) : null
+          }
+        >
+          {context.isPlatformAdmin
+            ? "Acara yang kamu buat muncul di sini, lengkap dengan jumlah fotonya."
+            : "Belum ada acara yang terhubung ke akun ini. Minta link undangan ke admin."}
+        </EmptyState>
+      ) : (
+        <ul className="grid gap-3">
+          {events.map((event) => {
+            const photos = countMap.get(event.id) ?? 0;
+            return (
+              <li key={event.id}>
+                <Link
+                  href={`/admin/${event.id}`}
+                  className="group grid grid-cols-[1fr_auto] items-center gap-6 rounded-2xl border border-line bg-shell-2/70 px-5 py-5 transition duration-200 hover:border-film/40 hover:bg-shell-2 sm:px-6"
+                >
+                  <div className="min-w-0 space-y-2">
+                    <p className="truncate text-xl font-semibold tracking-tight">
+                      {event.couple_names}
+                    </p>
+                    <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 text-sm text-cream/55">
+                      <EventStatus event={event} />
+                      {event.event_date ? <span>{formatDate(event.event_date)}</span> : null}
+                      <span className="font-mono text-xs text-cream/45">/e/{event.slug}</span>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-4">
+                    <div className="text-right">
+                      <p className="font-mono text-2xl font-medium text-film tabular-nums">
+                        {photos}
+                      </p>
+                      <p className="text-xs text-cream/50">foto</p>
+                    </div>
+                    <CaretRightIcon
+                      className="size-5 text-cream/30 transition duration-200 group-hover:translate-x-0.5 group-hover:text-film"
+                      aria-hidden
+                    />
+                  </div>
+                </Link>
+              </li>
+            );
+          })}
         </ul>
       )}
     </main>
   );
+}
+
+function formatDate(date: string): string {
+  return new Date(`${date}T00:00:00Z`).toLocaleDateString("id-ID", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+    timeZone: "UTC",
+  });
 }

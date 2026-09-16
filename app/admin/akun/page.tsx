@@ -1,7 +1,9 @@
-import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getAdminContext } from "@/lib/admin/access";
 import PasswordForm from "@/components/admin/PasswordForm";
+import PageHeader from "@/components/admin/PageHeader";
+import { Panel } from "@/components/ui/Panel";
+import { LinkButton } from "@/components/ui/Button";
 
 export const dynamic = "force-dynamic";
 
@@ -15,26 +17,30 @@ export default async function AccountPage({
   const { baru } = await searchParams;
 
   return (
-    <main className="mx-auto min-h-dvh max-w-md p-4 sm:p-6">
-      <Link
-        href="/admin"
-        className="font-mono text-[10px] uppercase tracking-[0.3em] text-cream/40 hover:text-film"
-      >
-        ← semua acara
-      </Link>
-      <h1 className="mt-2 text-2xl font-semibold">{baru ? "Selamat datang 🤍" : "Akun"}</h1>
-      <p className="mt-1 mb-6 text-sm text-cream/50">
-        {baru
-          ? "Buat password supaya lain kali bisa login langsung dengan email ini."
-          : `Masuk sebagai ${context.email ?? "—"}`}
-      </p>
-      <div className="rounded-2xl border border-cream/10 bg-shell-2/60 p-5 sm:p-6">
+    <main className="mx-auto min-h-dvh max-w-xl px-4 py-10 sm:px-6">
+      <PageHeader
+        title={baru ? "Selamat datang" : "Akun"}
+        meta={
+          baru ? (
+            <span>Buat password supaya lain kali bisa langsung masuk dengan email ini.</span>
+          ) : (
+            <span>
+              Masuk sebagai{" "}
+              <span className="text-cream">{context.email ?? "email tidak diketahui"}</span>
+            </span>
+          )
+        }
+      />
+      <Panel>
+        <h2 className="mb-5 text-base font-semibold">
+          {baru ? "Buat password" : "Ganti password"}
+        </h2>
         <PasswordForm />
-      </div>
+      </Panel>
       {baru ? (
-        <Link href="/admin" className="mt-4 inline-block text-xs text-cream/40 underline underline-offset-4">
+        <LinkButton href="/admin" variant="ghost" className="mt-4">
           Nanti saja, langsung lihat acara
-        </Link>
+        </LinkButton>
       ) : null}
     </main>
   );

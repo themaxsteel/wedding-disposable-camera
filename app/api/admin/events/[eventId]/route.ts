@@ -45,7 +45,7 @@ export async function PATCH(request: NextRequest, { params }: Params) {
 }
 
 /**
- * Hapus acara beserta SEMUA fotonya — hanya admin GuestPro.
+ * Hapus acara beserta SEMUA fotonya, hanya admin platform.
  *
  * Urutan sengaja dibuat bisa diulang: kamera ditutup dulu (tidak ada upload
  * baru), lalu file storage dihapus per batch, dan baris acara dihapus paling
@@ -56,7 +56,7 @@ export async function DELETE(request: NextRequest, { params }: Params) {
   const { eventId } = await params;
   const access = await getEventAccess(eventId);
   if (!access?.isPlatformAdmin) {
-    return jsonError("SESI_TIDAK_VALID", "Hanya admin GuestPro yang bisa menghapus acara.", 403);
+    return jsonError("SESI_TIDAK_VALID", "Hanya admin platform yang bisa menghapus acara.", 403);
   }
 
   const body = (await request.json().catch(() => null)) as { confirmSlug?: string } | null;
@@ -102,7 +102,7 @@ export async function DELETE(request: NextRequest, { params }: Params) {
     if (removeError || !deleted || deleted.length === 0 || round > 500) {
       return jsonError(
         "GAGAL",
-        `Sebagian file gagal dihapus (${removedFiles} sudah terhapus). Acara belum dihapus — coba lagi.`,
+        `Sebagian file gagal dihapus (${removedFiles} sudah terhapus). Acara belum dihapus, coba lagi.`,
         500,
       );
     }

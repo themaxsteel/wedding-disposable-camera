@@ -1,8 +1,11 @@
-import Link from "next/link";
 import { headers } from "next/headers";
 import { notFound } from "next/navigation";
 import QRCode from "qrcode";
 import { getEventAccess } from "@/lib/admin/access";
+import PageHeader from "@/components/admin/PageHeader";
+import PrintButton from "@/components/admin/PrintButton";
+import Button from "@/components/ui/Button";
+import { Input, Label } from "@/components/ui/Field";
 
 export const dynamic = "force-dynamic";
 
@@ -44,55 +47,54 @@ export default async function QrPage({
   );
 
   return (
-    <main className="mx-auto min-h-dvh max-w-5xl p-6 print:p-0">
-      <div className="mb-6 flex flex-wrap items-center justify-between gap-3 print:hidden">
-        <div>
-          <Link
-            href={`/admin/${eventId}`}
-            className="font-mono text-[10px] uppercase tracking-[0.3em] text-cream/40 hover:text-film"
-          >
-            ← dashboard
-          </Link>
-          <h1 className="mt-2 text-xl font-semibold">QR untuk meja tamu</h1>
-          <p className="text-xs text-cream/40">{origin}/e/{access.event.slug}</p>
-        </div>
+    <main className="mx-auto min-h-dvh max-w-6xl px-4 py-10 sm:px-6 print:max-w-none print:p-0">
+      <PageHeader
+        back={{ href: `/admin/${eventId}`, label: "Galeri" }}
+        title="QR untuk meja tamu"
+        meta={
+          <span className="font-mono text-xs break-all">
+            {origin}/e/{access.event.slug}
+          </span>
+        }
+        actions={
+          <form className="flex items-end gap-2">
+            <div>
+              <Label htmlFor="tables">Jumlah meja</Label>
+              <Input
+                id="tables"
+                type="number"
+                name="tables"
+                min={1}
+                max={60}
+                defaultValue={count}
+                className="w-24 font-mono tabular-nums"
+              />
+            </div>
+            <Button type="submit" variant="secondary">
+              Perbarui
+            </Button>
+            <PrintButton />
+          </form>
+        }
+      />
 
-        <form className="flex items-end gap-2">
-          <label className="text-xs text-cream/50">
-            Jumlah meja
-            <input
-              type="number"
-              name="tables"
-              min={1}
-              max={60}
-              defaultValue={count}
-              className="mt-1 block w-24 rounded-lg border border-cream/15 bg-black/30 px-3 py-2 text-sm outline-none focus:border-film/60"
-            />
-          </label>
-          <button
-            type="submit"
-            className="rounded-lg border border-cream/15 px-3 py-2 text-xs text-cream/70 hover:border-film/50"
-          >
-            Perbarui
-          </button>
-        </form>
-      </div>
-
-      <div className="grid grid-cols-2 gap-4 print:grid-cols-2 print:gap-0">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 print:grid-cols-2 print:gap-0">
         {codes.map((code) => (
           <div
             key={code.label}
-            className="flex break-inside-avoid flex-col items-center rounded-xl border border-cream/15 bg-white p-6 text-center text-shell print:rounded-none print:border-dashed"
+            className="flex break-inside-avoid flex-col items-center rounded-2xl bg-[#fbf8f3] p-7 text-center text-shell print:rounded-none print:border print:border-dashed print:border-neutral-400"
           >
-            <p className="font-mono text-[10px] uppercase tracking-[0.3em] text-grime">
-              Kamera sekali pakai
+            <p className="text-xs font-medium text-shell/55">Kamera sekali pakai</p>
+            <p className="mt-1 text-xl font-semibold tracking-tight text-balance">
+              {access.event.couple_names}
             </p>
-            <p className="mt-1 text-lg font-semibold">{access.event.couple_names}</p>
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={code.dataUrl} alt={`QR ${code.label}`} className="my-4 h-44 w-44" />
-            <p className="text-sm font-medium">{code.label}</p>
-            <p className="mt-1 text-[11px] text-grime">
-              Scan untuk memotret — hasilnya langsung ke pengantin
+            <img src={code.dataUrl} alt={`QR ${code.label}`} className="my-5 size-44" />
+            <p className="rounded-md bg-shell px-2.5 py-1 font-mono text-sm font-medium text-cream">
+              {code.label}
+            </p>
+            <p className="mt-3 text-xs text-shell/60">
+              Scan untuk memotret. Hasilnya langsung ke pengantin.
             </p>
           </div>
         ))}

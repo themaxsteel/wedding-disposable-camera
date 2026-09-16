@@ -10,7 +10,7 @@ export const runtime = "nodejs";
 export async function POST(request: NextRequest) {
   const context = await getAdminContext();
   if (!context?.isPlatformAdmin) {
-    return jsonError("SESI_TIDAK_VALID", "Hanya admin GuestPro yang bisa membuat acara.", 403);
+    return jsonError("SESI_TIDAK_VALID", "Hanya admin platform yang bisa membuat acara.", 403);
   }
 
   const parsed = eventInputSchema.safeParse(await request.json().catch(() => null));

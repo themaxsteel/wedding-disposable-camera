@@ -35,8 +35,19 @@ export function Select({ className = "", ...rest }: React.ComponentProps<"select
   return <select className={`${CONTROL} h-11 bg-shell-2 pr-8 text-sm ${className}`} {...rest} />;
 }
 
-export function Hint({ className = "", ...rest }: React.ComponentProps<"p">) {
-  return <p className={`mt-2 text-xs leading-relaxed text-cream/50 ${className}`} {...rest} />;
+export function Hint({
+  className = "",
+  warn = false,
+  flush = false,
+  ...rest
+}: React.ComponentProps<"p"> & { warn?: boolean; flush?: boolean }) {
+  const color = warn ? "text-film" : "text-cream/50";
+  return (
+    <p
+      className={`${flush ? "" : "mt-2"} text-xs leading-relaxed ${color} ${className}`}
+      {...rest}
+    />
+  );
 }
 
 export function FieldError({ children }: { children: React.ReactNode }) {

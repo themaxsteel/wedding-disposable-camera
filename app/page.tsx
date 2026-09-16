@@ -1,23 +1,62 @@
-import Link from "next/link";
+import { ArrowRightIcon, CameraIcon, FilmStripIcon, ImagesIcon } from "@phosphor-icons/react/ssr";
+import { LinkButton } from "@/components/ui/Button";
+
+const FLOW = [
+  {
+    icon: <CameraIcon weight="duotone" />,
+    title: "Tamu memindai QR di meja",
+    body: "Ketik nama, lalu kamera langsung terbuka di browser. Tanpa unduh aplikasi.",
+  },
+  {
+    icon: <FilmStripIcon weight="duotone" />,
+    title: "Satu rol film per tamu",
+    body: "Jatah jepretan terbatas dan hasilnya tidak bisa diintip, seperti kamera sekali pakai.",
+  },
+  {
+    icon: <ImagesIcon weight="duotone" />,
+    title: "Pengantin menerima semuanya",
+    body: "Foto asli dan versi film terkumpul per tamu, siap diunduh setelah acara.",
+  },
+];
 
 export default function HomePage() {
   return (
-    <main className="flex min-h-dvh flex-col items-center justify-center gap-6 p-6 text-center shell-texture">
-      <div className="max-w-md space-y-4">
-        <p className="font-mono text-[10px] uppercase tracking-[0.35em] text-film/80">
-          GuestPro
-        </p>
-        <h1 className="text-3xl font-semibold">Kamera Digital Sekali Pakai</h1>
-        <p className="text-sm leading-relaxed text-cream/60">
-          Tamu memindai QR di meja, mengetik nama, lalu memotret. Hasilnya mengalir
-          langsung ke pengantin — tanpa unduh aplikasi, tanpa galeri yang bisa diintip.
-        </p>
-        <Link
-          href="/admin"
-          className="inline-block rounded-lg border border-cream/15 px-4 py-2 text-sm text-cream/70 transition hover:border-film/50 hover:text-cream"
-        >
-          Masuk dashboard
-        </Link>
+    <main className="shell-texture min-h-dvh px-5 py-16 sm:px-8 sm:py-24">
+      <div className="mx-auto grid max-w-5xl gap-14 lg:grid-cols-[1.1fr_1fr] lg:items-center lg:gap-20">
+        <div className="reveal space-y-6">
+          <h1 className="text-4xl leading-[1.05] font-semibold tracking-tight sm:text-5xl lg:text-6xl">
+            Kamera sekali pakai untuk tamu pernikahan
+          </h1>
+          <p className="max-w-[44ch] text-base leading-relaxed text-cream/65 sm:text-lg">
+            Tamu memotret dari HP masing-masing. Hasilnya baru dicuci untuk pengantin setelah
+            acara selesai.
+          </p>
+          <LinkButton
+            href="/admin"
+            size="lg"
+            icon={<ArrowRightIcon className="size-5" weight="bold" aria-hidden />}
+            className="flex-row-reverse"
+          >
+            Masuk dashboard
+          </LinkButton>
+        </div>
+
+        <ol className="reveal space-y-3 [animation-delay:140ms]">
+          {FLOW.map((step) => (
+            <li
+              key={step.title}
+              className="body-plastic flex gap-4 rounded-2xl border border-line p-5"
+            >
+              <span className="flex size-11 shrink-0 items-center justify-center rounded-xl border border-line bg-shell text-film [&_svg]:size-5">
+                {step.icon}
+              </span>
+              <div>
+                <p className="font-medium">{step.title}</p>
+                <p className="mt-1 text-sm leading-relaxed text-cream/60">{step.body}</p>
+              </div>
+            </li>
+          ))}
+        </ol>
       </div>
     </main>
   );

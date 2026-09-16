@@ -1,7 +1,8 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getAdminContext } from "@/lib/admin/access";
 import EventForm from "@/components/admin/EventForm";
+import PageHeader from "@/components/admin/PageHeader";
+import { Panel } from "@/components/ui/Panel";
 
 export const dynamic = "force-dynamic";
 
@@ -11,17 +12,15 @@ export default async function NewEventPage() {
   if (!context?.isPlatformAdmin) notFound();
 
   return (
-    <main className="mx-auto min-h-dvh max-w-2xl p-4 sm:p-6">
-      <Link
-        href="/admin"
-        className="font-mono text-[10px] uppercase tracking-[0.3em] text-cream/40 hover:text-film"
-      >
-        ← semua acara
-      </Link>
-      <h1 className="mt-2 mb-6 text-2xl font-semibold">Acara baru</h1>
-      <div className="rounded-2xl border border-cream/10 bg-shell-2/60 p-5 sm:p-6">
+    <main className="mx-auto min-h-dvh max-w-3xl px-4 py-10 sm:px-6">
+      <PageHeader
+        back={{ href: "/admin", label: "Semua acara" }}
+        title="Acara baru"
+        meta={<span>Pengantin bisa diundang setelah acara dibuat.</span>}
+      />
+      <Panel>
         <EventForm mode="create" />
-      </div>
+      </Panel>
     </main>
   );
 }

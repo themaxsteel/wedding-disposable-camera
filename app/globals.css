@@ -90,6 +90,11 @@ body:has(.camera-surface)::after {
 }
 
 @media print {
+  html,
+  body {
+    background: #fff;
+  }
+
   body::after {
     display: none;
   }

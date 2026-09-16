@@ -1,8 +1,11 @@
-import Link from "next/link";
+import { GearSixIcon, QrCodeIcon } from "@phosphor-icons/react/ssr";
 import { notFound } from "next/navigation";
 import { getEventAccess } from "@/lib/admin/access";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import Gallery from "@/components/admin/Gallery";
+import PageHeader from "@/components/admin/PageHeader";
+import EventStatus from "@/components/admin/EventStatus";
+import { LinkButton } from "@/components/ui/Button";
 import type { GuestSummaryRow } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
@@ -30,34 +33,43 @@ export default async function EventDashboardPage({
   const guests = (summary ?? []) as GuestSummaryRow[];
 
   return (
-    <main className="mx-auto min-h-dvh max-w-6xl p-4 sm:p-6">
-      <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <Link href="/admin" className="font-mono text-[10px] uppercase tracking-[0.3em] text-cream/40 hover:text-film">
-            ← semua acara
-          </Link>
-          <h1 className="mt-2 text-2xl font-semibold">{access.event.couple_names}</h1>
-          <p className="font-mono text-xs text-cream/40">
-            /e/{access.event.slug} · {count ?? 0} foto · {guests.length} tamu memotret
-          </p>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          {access.canManage ? (
-            <Link
-              href={`/admin/${eventId}/pengaturan`}
-              className="rounded-lg border border-cream/15 px-3 py-2 text-xs text-cream/70 transition hover:border-film/40 hover:text-cream"
+    <main className="mx-auto min-h-dvh max-w-6xl px-4 py-10 sm:px-6">
+      <PageHeader
+        back={{ href: "/admin", label: "Semua acara" }}
+        title={access.event.couple_names}
+        meta={
+          <>
+            <EventStatus event={access.event} />
+            <span>
+              <b className="font-medium text-cream tabular-nums">{count ?? 0}</b> foto
+            </span>
+            <span>
+              <b className="font-medium text-cream tabular-nums">{guests.length}</b> tamu
+              memotret
+            </span>
+          </>
+        }
+        actions={
+          <>
+            <LinkButton
+              href={`/admin/${eventId}/qr`}
+              variant="secondary"
+              icon={<QrCodeIcon className="size-4" aria-hidden />}
             >
-              Pengaturan & undangan
-            </Link>
-          ) : null}
-          <Link
-            href={`/admin/${eventId}/qr`}
-            className="rounded-lg border border-cream/15 px-3 py-2 text-xs text-cream/70 transition hover:border-film/40 hover:text-cream"
-          >
-            Cetak QR meja
-          </Link>
-        </div>
-      </div>
+              Cetak QR meja
+            </LinkButton>
+            {access.canManage ? (
+              <LinkButton
+                href={`/admin/${eventId}/pengaturan`}
+                variant="secondary"
+                icon={<GearSixIcon className="size-4" aria-hidden />}
+              >
+                Pengaturan
+              </LinkButton>
+            ) : null}
+          </>
+        }
+      />
 
       <Gallery
         eventId={eventId}

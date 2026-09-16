@@ -1,16 +1,20 @@
 "use client";
 import { useFormStatus } from "react-dom";
+import { ImagesIcon } from "@phosphor-icons/react/ssr";
+import Button from "@/components/ui/Button";
 
 export default function ConfirmButton() {
   const { pending } = useFormStatus();
 
   return (
-    <button
+    <Button
       type="submit"
-      disabled={pending}
-      className="w-full rounded-xl bg-film px-4 py-3.5 text-base font-semibold text-shell transition active:scale-[0.99] disabled:opacity-60"
+      size="lg"
+      block
+      loading={pending}
+      icon={<ImagesIcon className="size-5" weight="bold" aria-hidden />}
     >
-      {pending ? "Masuk…" : "Masuk ke galeri"}
-    </button>
+      {pending ? "Masuk" : "Masuk ke galeri"}
+    </Button>
   );
 }

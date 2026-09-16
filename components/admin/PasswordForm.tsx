@@ -1,7 +1,9 @@
 "use client";
 import { useState } from "react";
-import Link from "next/link";
 import { getSupabaseBrowser } from "@/lib/supabase/client";
+import Button, { LinkButton } from "@/components/ui/Button";
+import { FieldError, Hint, Input, Label } from "@/components/ui/Field";
+import { Notice } from "@/components/ui/Panel";
 
 export default function PasswordForm() {
   const [password, setPassword] = useState("");
@@ -45,25 +47,20 @@ export default function PasswordForm() {
 
   if (done) {
     return (
-      <div className="space-y-3">
-        <p className="text-sm text-teal">Password tersimpan. Mulai sekarang kamu bisa login dengan email & password ini.</p>
-        <Link
-          href="/admin"
-          className="inline-block rounded-lg bg-film px-4 py-2.5 text-sm font-semibold text-shell"
-        >
-          Lihat acara
-        </Link>
+      <div className="space-y-4">
+        <Notice tone="ok" title="Password tersimpan">
+          Mulai sekarang kamu bisa masuk dengan email dan password ini.
+        </Notice>
+        <LinkButton href="/admin">Lihat acara</LinkButton>
       </div>
     );
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
+    <form onSubmit={handleSubmit} className="space-y-5">
       <div>
-        <label htmlFor="new-password" className="mb-1 block text-xs text-cream/50">
-          Password baru
-        </label>
-        <input
+        <Label htmlFor="new-password">Password baru</Label>
+        <Input
           id="new-password"
           type="password"
           autoComplete="new-password"
@@ -71,37 +68,26 @@ export default function PasswordForm() {
           minLength={8}
           value={password}
           onChange={(event) => setPassword(event.target.value)}
-          className="w-full rounded-lg border border-cream/15 bg-black/30 px-3 py-2.5 text-sm outline-none focus:border-film/60"
         />
+        <Hint>Minimal 8 karakter.</Hint>
       </div>
       <div>
-        <label htmlFor="confirm-password" className="mb-1 block text-xs text-cream/50">
-          Ulangi password
-        </label>
-        <input
+        <Label htmlFor="confirm-password">Ulangi password</Label>
+        <Input
           id="confirm-password"
           type="password"
           autoComplete="new-password"
           required
           value={confirm}
           onChange={(event) => setConfirm(event.target.value)}
-          className="w-full rounded-lg border border-cream/15 bg-black/30 px-3 py-2.5 text-sm outline-none focus:border-film/60"
+          aria-invalid={error ? true : undefined}
         />
+        <FieldError>{error}</FieldError>
       </div>
 
-      {error ? (
-        <p role="alert" className="text-sm text-film">
-          {error}
-        </p>
-      ) : null}
-
-      <button
-        type="submit"
-        disabled={busy}
-        className="rounded-lg bg-film px-4 py-2.5 text-sm font-semibold text-shell disabled:opacity-60"
-      >
-        {busy ? "Menyimpan…" : "Simpan password"}
-      </button>
+      <Button type="submit" loading={busy}>
+        {busy ? "Menyimpan" : "Simpan password"}
+      </Button>
     </form>
   );
 }

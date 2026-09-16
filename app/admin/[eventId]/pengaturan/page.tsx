@@ -1,9 +1,10 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getEventAccess } from "@/lib/admin/access";
 import EventForm from "@/components/admin/EventForm";
 import MembersPanel from "@/components/admin/MembersPanel";
 import DeleteEventPanel from "@/components/admin/DeleteEventPanel";
+import PageHeader from "@/components/admin/PageHeader";
+import { Notice, Panel } from "@/components/ui/Panel";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
@@ -36,63 +37,62 @@ export default async function EventSettingsPage({
   }
 
   return (
-    <main className="mx-auto min-h-dvh max-w-2xl space-y-8 p-4 sm:p-6">
-      <div>
-        <Link
-          href={`/admin/${eventId}`}
-          className="font-mono text-[10px] uppercase tracking-[0.3em] text-cream/40 hover:text-film"
-        >
-          ← galeri
-        </Link>
-        <h1 className="mt-2 text-2xl font-semibold">{event.couple_names}</h1>
-        <p className="font-mono text-xs text-cream/40">Pengaturan acara · /e/{event.slug}</p>
+    <main className="mx-auto min-h-dvh max-w-3xl px-4 py-10 sm:px-6">
+      <PageHeader
+        back={{ href: `/admin/${eventId}`, label: "Galeri" }}
+        title="Pengaturan acara"
+        meta={
+          <>
+            <span className="text-cream">{event.couple_names}</span>
+            <span className="font-mono text-xs">/e/{event.slug}</span>
+          </>
+        }
+      />
+
+      <div className="space-y-10">
+        {baru ? (
+          <Notice tone="ok" title="Acara dibuat">
+            Langkah berikutnya: undang pengantin di bagian bawah, lalu cetak QR meja dari halaman
+            galeri.
+          </Notice>
+        ) : null}
+
+        <section className="space-y-4">
+          <h2 className="text-lg font-semibold tracking-tight">Detail acara</h2>
+          <Panel>
+            <EventForm mode="edit" event={event} />
+          </Panel>
+        </section>
+
+        {access.canManageMembers ? (
+          <section className="space-y-4">
+            <div className="space-y-1">
+              <h2 className="text-lg font-semibold tracking-tight">Siapa yang bisa melihat foto</h2>
+              <p className="text-sm text-cream/55">
+                Undangan berupa link yang kamu kirim sendiri, misalnya lewat WhatsApp.
+              </p>
+            </div>
+            <Panel>
+              <MembersPanel eventId={eventId} coupleNames={event.couple_names} />
+            </Panel>
+          </section>
+        ) : null}
+
+        {access.isPlatformAdmin ? (
+          <section className="space-y-4">
+            <h2 className="text-lg font-semibold tracking-tight text-danger">Hapus acara</h2>
+            <Panel tone="danger">
+              <DeleteEventPanel
+                eventId={eventId}
+                slug={event.slug}
+                coupleNames={event.couple_names}
+                photoCount={photoCount}
+                guestCount={guestCount}
+              />
+            </Panel>
+          </section>
+        ) : null}
       </div>
-
-      {baru ? (
-        <div className="rounded-xl border border-teal/50 bg-teal/15 p-4 text-sm">
-          <p className="font-medium">Acara dibuat ✓</p>
-          <p className="mt-1 text-cream/60">
-            Langkah berikutnya: undang pengantin di bagian bawah, lalu cetak QR meja dari
-            halaman galeri.
-          </p>
-        </div>
-      ) : null}
-
-      {access.canManageMembers ? (
-        <section className="space-y-3">
-          <div>
-            <h2 className="text-lg font-semibold">Siapa yang bisa melihat foto</h2>
-            <p className="text-sm text-cream/50">
-              Undangan berupa link yang kamu kirim sendiri, misalnya lewat WhatsApp.
-            </p>
-          </div>
-          <div className="rounded-2xl border border-cream/10 bg-shell-2/60 p-5 sm:p-6">
-            <MembersPanel eventId={eventId} coupleNames={event.couple_names} />
-          </div>
-        </section>
-      ) : null}
-
-      <section className="space-y-3">
-        <h2 className="text-lg font-semibold">Detail acara</h2>
-        <div className="rounded-2xl border border-cream/10 bg-shell-2/60 p-5 sm:p-6">
-          <EventForm mode="edit" event={event} />
-        </div>
-      </section>
-
-      {access.isPlatformAdmin ? (
-        <section className="space-y-3">
-          <h2 className="text-lg font-semibold text-red-300">Hapus acara</h2>
-          <div className="rounded-2xl border border-red-400/30 bg-red-500/5 p-5 sm:p-6">
-            <DeleteEventPanel
-              eventId={eventId}
-              slug={event.slug}
-              coupleNames={event.couple_names}
-              photoCount={photoCount}
-              guestCount={guestCount}
-            />
-          </div>
-        </section>
-      ) : null}
     </main>
   );
 }

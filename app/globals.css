@@ -1,26 +1,94 @@
 @import "tailwindcss";
 
+@theme {
+  --color-shell: #14110f;
+  --color-shell-2: #1e1a17;
+  --color-cream: #f3e9da;
+  --color-film: #f0a04b;
+  --color-film-deep: #c4622d;
+  --color-teal: #2f6f6b;
+  --color-grime: #6b6259;
+
+  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
+    "Helvetica Neue", Arial, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+    "Liberation Mono", monospace;
+}
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  color-scheme: dark;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html,
+body {
+  background: var(--color-shell);
+  color: var(--color-cream);
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Layar kamera dipakai dengan jempol, sambil berdiri, sering sambil tertawa.
+   Semua gestur browser yang bisa mengganggu dimatikan di sana. */
+.camera-surface {
+  overscroll-behavior: none;
+  touch-action: manipulation;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.safe-top {
+  padding-top: max(0.75rem, env(safe-area-inset-top));
+}
+
+.safe-bottom {
+  padding-bottom: max(1rem, env(safe-area-inset-bottom));
+}
+
+/* Tekstur plastik bodi kamera sekali pakai. */
+.shell-texture {
+  background-image:
+    repeating-linear-gradient(
+      0deg,
+      rgba(255, 255, 255, 0.025) 0px,
+      rgba(255, 255, 255, 0.025) 1px,
+      transparent 1px,
+      transparent 3px
+    ),
+    radial-gradient(120% 80% at 50% 0%, #2a2421 0%, #14110f 70%);
+}
+
+.viewfinder-frame {
+  box-shadow:
+    inset 0 0 0 2px rgba(243, 233, 218, 0.15),
+    inset 0 0 60px rgba(0, 0, 0, 0.6);
+}
+
+@keyframes flash-pop {
+  0% { opacity: 0; }
+  8% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+.flash-pop {
+  animation: flash-pop 320ms ease-out forwards;
+}
+
+@keyframes toast-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.toast-in {
+  animation: toast-in 180ms ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .flash-pop,
+  .toast-in {
+    animation-duration: 1ms;
+  }
 }

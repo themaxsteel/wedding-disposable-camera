@@ -13,7 +13,11 @@ export type StreamStatus = "idle" | "starting" | "live" | "error";
 
 export interface CameraStream {
   videoRef: React.RefObject<HTMLVideoElement | null>;
+  /** Pasang sebagai `ref` pada <video>. */
+  attachVideo: (element: HTMLVideoElement | null) => void;
   status: StreamStatus;
+  /** Pernah hidup setidaknya sekali — dipakai agar layar izin tidak muncul lagi saat putar kamera. */
+  everLive: boolean;
   errorKind: CameraErrorKind | null;
   facing: Facing;
   torchAvailable: boolean;
@@ -33,10 +37,25 @@ export function useCameraStream(initialFacing: Facing = "environment"): CameraSt
   const facingRef = useRef<Facing>(initialFacing);
 
   const [status, setStatus] = useState<StreamStatus>("idle");
+  const [everLive, setEverLive] = useState(false);
   const [errorKind, setErrorKind] = useState<CameraErrorKind | null>(null);
   const [facing, setFacing] = useState<Facing>(initialFacing);
   const [torchAvailable, setTorchAvailable] = useState(false);
   const [torchOn, setTorchOn] = useState(false);
+
+  /**
+   * Elemen <video> baru dirender SETELAH stream siap (layar izin diganti
+   * viewfinder). Jadi stream harus dipasang saat elemen itu muncul, bukan
+   * hanya di dalam start() — di sana elemennya belum ada dan layar jadi hitam.
+   */
+  const attachVideo = useCallback((element: HTMLVideoElement | null) => {
+    videoRef.current = element;
+    const stream = streamRef.current;
+    if (element && stream && element.srcObject !== stream) {
+      element.srcObject = stream;
+      void element.play().catch(() => {});
+    }
+  }, []);
 
   const stop = useCallback(() => {
     const stream = streamRef.current;
@@ -110,6 +129,7 @@ export function useCameraStream(initialFacing: Facing = "environment"): CameraSt
 
         const track = stream.getVideoTracks()[0] ?? null;
         setTorchAvailable(trackSupportsTorch(track));
+        setEverLive(true);
         setStatus("live");
       } finally {
         startingRef.current = false;
@@ -170,7 +190,9 @@ export function useCameraStream(initialFacing: Facing = "environment"): CameraSt
 
   return {
     videoRef,
+    attachVideo,
     status,
+    everLive,
     errorKind,
     facing,
     torchAvailable,

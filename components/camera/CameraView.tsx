@@ -30,7 +30,9 @@ export default function CameraView({ session }: { session: GuestSessionInfo }) {
   // sebagai ref biasa, dan itu memicu peringatan akses ref saat render.
   const {
     videoRef,
+    attachVideo,
     status,
+    everLive,
     errorKind,
     facing,
     start: startCamera,
@@ -210,7 +212,11 @@ export default function CameraView({ session }: { session: GuestSessionInfo }) {
     void startCamera();
   }, [startCamera]);
 
-  if (status !== "live") {
+  // Layar izin hanya untuk sebelum kamera pertama kali hidup. Saat putar
+  // kamera (status sementara "starting"), viewfinder tetap di tempat.
+  const showGate = status === "idle" || status === "error" || (status === "starting" && !everLive);
+
+  if (showGate) {
     return (
       <PermissionGate
         status={status}
@@ -238,7 +244,7 @@ export default function CameraView({ session }: { session: GuestSessionInfo }) {
 
       <div className="relative mx-4 my-3 flex-1 overflow-hidden rounded-2xl bg-shell-2 viewfinder-frame">
         <video
-          ref={videoRef}
+          ref={attachVideo}
           playsInline
           muted
           autoPlay

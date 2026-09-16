@@ -10,6 +10,9 @@ export interface UploadJob {
   clientPhotoId: string;
   orig: Blob;
   film: Blob | null;
+  /** Opsional: job lama di IndexedDB dari versi sebelum ada thumbnail. */
+  origThumb?: Blob | null;
+  filmThumb?: Blob | null;
   caption: string | null;
   takenAt: string;
   facing: Facing | null;

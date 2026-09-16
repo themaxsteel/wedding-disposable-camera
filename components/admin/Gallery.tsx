@@ -223,10 +223,10 @@ export default function Gallery({ eventId, guests, totalPhotos, canManage }: Pro
                 onClick={() => setLightbox(photo)}
                 className="group relative aspect-square overflow-hidden rounded-lg bg-shell-2"
               >
-                {photo.url ? (
+                {photo.thumbUrl ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img
-                    src={photo.url}
+                    src={photo.thumbUrl}
                     alt={`Foto oleh ${photo.guestName}`}
                     loading="lazy"
                     decoding="async"

@@ -13,6 +13,7 @@ const bodySchema = z.object({
   height: z.number().int().positive().max(20000).nullish(),
   bytes: z.number().int().positive().max(20_000_000).nullish(),
   filteredUploaded: z.boolean().default(false),
+  thumbsUploaded: z.boolean().default(false),
 });
 
 export async function POST(request: NextRequest) {
@@ -25,7 +26,8 @@ export async function POST(request: NextRequest) {
   if (!parsed.success) {
     return jsonError("INPUT_TIDAK_VALID", "Permintaan tidak valid.", 400);
   }
-  const { photoId, caption, width, height, bytes, filteredUploaded } = parsed.data;
+  const { photoId, caption, width, height, bytes, filteredUploaded, thumbsUploaded } =
+    parsed.data;
 
   const admin = createAdminClient();
   const update: Record<string, unknown> = {
@@ -34,6 +36,7 @@ export async function POST(request: NextRequest) {
     width: width ?? null,
     height: height ?? null,
     bytes: bytes ?? null,
+    has_thumb: thumbsUploaded,
   };
   if (!filteredUploaded) update.filtered_path = null;
 

@@ -43,6 +43,7 @@ export interface PhotoRow {
   client_photo_id: string;
   taken_at: string | null;
   status: PhotoStatus;
+  has_thumb: boolean;
   created_at: string;
 }
 
@@ -86,7 +87,10 @@ export interface AdminPhotoItem {
   takenAt: string | null;
   createdAt: string;
   status: PhotoStatus;
+  /** Ukuran penuh — untuk lightbox. */
   url: string | null;
+  /** Versi kecil untuk grid; sama dengan `url` bila foto belum punya thumbnail. */
+  thumbUrl: string | null;
   hasFilm: boolean;
 }
 

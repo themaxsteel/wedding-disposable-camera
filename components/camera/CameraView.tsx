@@ -2,7 +2,13 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useCameraStream } from "@/lib/camera/useCameraStream";
-import { frameFromFile, grabFrame, toJpegBlob } from "@/lib/camera/capture";
+import {
+  frameFromFile,
+  grabFrame,
+  makeThumbnail,
+  THUMB_QUALITY,
+  toJpegBlob,
+} from "@/lib/camera/capture";
 import { applyFilmLook } from "@/lib/camera/filmFilter";
 import {
   playShutterSound,
@@ -103,9 +109,11 @@ export default function CameraView({ session }: { session: GuestSessionInfo }) {
         dateStamp: new Date(),
       });
 
-      const [origBlob, filmBlob] = await Promise.all([
+      const [origBlob, filmBlob, origThumb, filmThumb] = await Promise.all([
         toJpegBlob(frame.canvas),
         toJpegBlob(filmCanvas).catch(() => null),
+        toJpegBlob(makeThumbnail(frame.canvas), THUMB_QUALITY).catch(() => null),
+        toJpegBlob(makeThumbnail(filmCanvas), THUMB_QUALITY).catch(() => null),
       ]);
 
       const clientPhotoId = crypto.randomUUID();
@@ -115,6 +123,8 @@ export default function CameraView({ session }: { session: GuestSessionInfo }) {
         clientPhotoId,
         orig: origBlob,
         film: filmBlob,
+        origThumb,
+        filmThumb,
         caption: null,
         takenAt: new Date(now).toISOString(),
         facing: source === "camera" ? facing : null,

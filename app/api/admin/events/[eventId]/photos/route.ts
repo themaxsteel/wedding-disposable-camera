@@ -28,7 +28,7 @@ export async function GET(
   let query = admin
     .from("photos")
     .select(
-      "id, storage_path, filtered_path, caption, taken_at, created_at, status, guests!inner(display_name, name_key, table_label)",
+      "id, storage_path, filtered_path, has_thumb, caption, taken_at, created_at, status, guests!inner(display_name, name_key, table_label)",
     )
     .eq("event_id", eventId)
     .order("created_at", { ascending: false })
@@ -50,6 +50,7 @@ export async function GET(
     id: string;
     storage_path: string;
     filtered_path: string | null;
+    has_thumb: boolean;
     caption: string | null;
     taken_at: string | null;
     created_at: string;
@@ -58,16 +59,22 @@ export async function GET(
   };
   const rows = (data ?? []) as unknown as Row[];
 
-  // Bucket privat: setiap foto butuh signed URL. Dibuat sekaligus satu batch.
-  const paths = rows.map((row) =>
-    variant === "film" && row.filtered_path ? row.filtered_path : row.storage_path,
-  );
+  // Path penuh (lightbox) + path thumbnail (grid) per foto. Foto lama tanpa
+  // thumbnail memakai path penuh di kedua tempat.
+  const resolved = rows.map((row) => {
+    const full =
+      variant === "film" && row.filtered_path ? row.filtered_path : row.storage_path;
+    const thumb = row.has_thumb ? full.replace(/\.jpg$/, "_thumb.jpg") : full;
+    return { full, thumb };
+  });
 
+  // Bucket privat: setiap file butuh signed URL. Dibuat sekaligus satu batch.
+  const uniquePaths = [...new Set(resolved.flatMap(({ full, thumb }) => [full, thumb]))];
   const signedMap = new Map<string, string>();
-  if (paths.length > 0) {
+  if (uniquePaths.length > 0) {
     const { data: signed } = await admin.storage
       .from(PHOTO_BUCKET)
-      .createSignedUrls(paths, SIGNED_URL_TTL_SECONDS);
+      .createSignedUrls(uniquePaths, SIGNED_URL_TTL_SECONDS);
     for (const item of signed ?? []) {
       if (item.signedUrl && item.path) signedMap.set(item.path, item.signedUrl);
     }
@@ -81,7 +88,8 @@ export async function GET(
     takenAt: row.taken_at,
     createdAt: row.created_at,
     status: row.status,
-    url: signedMap.get(paths[index]) ?? null,
+    url: signedMap.get(resolved[index].full) ?? null,
+    thumbUrl: signedMap.get(resolved[index].thumb) ?? signedMap.get(resolved[index].full) ?? null,
     hasFilm: row.filtered_path !== null,
   }));
 

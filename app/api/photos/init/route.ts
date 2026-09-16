@@ -16,9 +16,12 @@ const bodySchema = z.object({
   facing: z.enum(["user", "environment"]).nullish(),
   source: z.enum(["camera", "upload"]).default("camera"),
   withFiltered: z.boolean().default(true),
+  withThumbs: z.boolean().default(false),
 });
 
-function objectPath(eventId: string, guestId: string, photoId: string, variant: "orig" | "film") {
+type Variant = "orig" | "film" | "orig_thumb" | "film_thumb";
+
+function objectPath(eventId: string, guestId: string, photoId: string, variant: Variant) {
   return `${eventId}/${guestId}/${photoId}_${variant}.jpg`;
 }
 
@@ -35,7 +38,7 @@ export async function POST(request: NextRequest) {
   if (!parsed.success) {
     return jsonError("INPUT_TIDAK_VALID", "Permintaan tidak valid.", 400);
   }
-  const { clientPhotoId, takenAt, facing, source, withFiltered } = parsed.data;
+  const { clientPhotoId, takenAt, facing, source, withFiltered, withThumbs } = parsed.data;
 
   const admin = createAdminClient();
   const { guest, event } = session;
@@ -99,28 +102,24 @@ export async function POST(request: NextRequest) {
   }
 
   const storage = admin.storage.from(PHOTO_BUCKET);
-  const origPath = objectPath(event.id, guest.id, photoId, "orig");
-  const filmPath = objectPath(event.id, guest.id, photoId, "film");
 
-  const [origSigned, filmSigned] = await Promise.all([
-    storage.createSignedUploadUrl(origPath, { upsert: true }),
-    withFiltered
-      ? storage.createSignedUploadUrl(filmPath, { upsert: true })
-      : Promise.resolve(null),
+  const sign = async (variant: Variant, wanted: boolean) => {
+    if (!wanted) return null;
+    const path = objectPath(event.id, guest.id, photoId, variant);
+    const { data, error } = await storage.createSignedUploadUrl(path, { upsert: true });
+    return error || !data ? null : { path, token: data.token };
+  };
+
+  const [orig, film, origThumb, filmThumb] = await Promise.all([
+    sign("orig", true),
+    sign("film", withFiltered),
+    sign("orig_thumb", withThumbs),
+    sign("film_thumb", withThumbs && withFiltered),
   ]);
 
-  if (origSigned.error || !origSigned.data) {
+  if (!orig) {
     return jsonError("GAGAL", "Gagal membuat URL upload.", 500);
   }
 
-  return jsonOk({
-    photoId,
-    remaining,
-    rollLimit,
-    orig: { path: origPath, token: origSigned.data.token },
-    film:
-      filmSigned && !filmSigned.error && filmSigned.data
-        ? { path: filmPath, token: filmSigned.data.token }
-        : null,
-  });
+  return jsonOk({ photoId, remaining, rollLimit, orig, film, origThumb, filmThumb });
 }

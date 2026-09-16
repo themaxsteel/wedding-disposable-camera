@@ -1,6 +1,10 @@
 export const MAX_LONG_EDGE = 1920;
 export const JPEG_QUALITY = 0.82;
 
+/** Thumbnail galeri admin: cukup tajam untuk kotak grid di layar retina. */
+export const THUMB_LONG_EDGE = 480;
+export const THUMB_QUALITY = 0.72;
+
 export interface CapturedFrame {
   canvas: HTMLCanvasElement;
   width: number;
@@ -63,6 +67,12 @@ export function grabFrame(video: HTMLVideoElement): CapturedFrame {
   const { width, height } = targetSize(sw, sh);
   const canvas = downscale(video, sw, sh, width, height);
   return { canvas, width, height };
+}
+
+/** Versi kecil untuk grid dashboard — sekitar 30 KB, bukan 400 KB. */
+export function makeThumbnail(source: HTMLCanvasElement): HTMLCanvasElement {
+  const { width, height } = targetSize(source.width, source.height, THUMB_LONG_EDGE);
+  return downscale(source, source.width, source.height, width, height);
 }
 
 /** Jalur fallback: file dari galeri / input capture. */

@@ -187,6 +187,7 @@ class Uploader {
         facing: job.facing,
         source: job.source,
         withFiltered: job.film !== null,
+        withThumbs: Boolean(job.origThumb),
       }),
     });
 
@@ -231,6 +232,33 @@ class Uploader {
       filteredUploaded = !filmUpload.error;
     }
 
+    // Thumbnail juga bonus: galeri kembali memakai file penuh kalau gagal.
+    // Dianggap lengkap hanya bila setiap varian yang tersimpan punya thumbnail.
+    let thumbsUploaded = false;
+    if (job.origThumb && init.origThumb) {
+      const origThumbUpload = await storage.uploadToSignedUrl(
+        init.origThumb.path,
+        init.origThumb.token,
+        job.origThumb,
+        { contentType: "image/jpeg" },
+      );
+      thumbsUploaded = !origThumbUpload.error;
+
+      if (thumbsUploaded && filteredUploaded) {
+        if (job.filmThumb && init.filmThumb) {
+          const filmThumbUpload = await storage.uploadToSignedUrl(
+            init.filmThumb.path,
+            init.filmThumb.token,
+            job.filmThumb,
+            { contentType: "image/jpeg" },
+          );
+          thumbsUploaded = !filmThumbUpload.error;
+        } else {
+          thumbsUploaded = false;
+        }
+      }
+    }
+
     const commitResponse = await fetch("/api/photos/commit", {
       method: "POST",
       headers: { "content-type": "application/json" },
@@ -241,6 +269,7 @@ class Uploader {
         height: job.height,
         bytes: job.orig.size,
         filteredUploaded,
+        thumbsUploaded,
       }),
     });
     if (!commitResponse.ok) throw new Error("COMMIT_GAGAL");

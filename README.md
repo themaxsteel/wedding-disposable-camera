@@ -67,7 +67,7 @@ select id from auth.users where email = 'admin@guestpro.id';
 | Anon key | Tidak punya satu pun policy SELECT. Tamu tidak bisa membaca foto siapa pun, bahkan lewat API langsung. |
 | Jatah film | Dipotong hanya oleh `claim_shot()` di Postgres, dengan baris tamu terkunci. |
 | Idempotensi | `unique (guest_id, client_photo_id)` — retry dari antrean offline tidak menggandakan foto atau membakar 2 jatah. |
-| Ukuran | Sisi panjang 1920px, JPEG q0.82 (~400 KB), dua versi per jepretan. |
+| Ukuran | Sisi panjang 1920px, JPEG q0.82 (~400 KB), dua versi per jepretan, masing-masing dengan thumbnail 480px. |
 | Versi film | Grain + vignette + light leak + date stamp, dibuat di canvas sebelum upload. |
 | Font | Font sistem, bukan Google Fonts — satu permintaan jaringan lebih sedikit di gedung resepsi, dan build tidak bergantung pada fonts.googleapis.com. |
 | ZIP | `archiver` store (tanpa kompresi ulang) (JPEG tidak perlu dikompres ulang), dipecah per 300 foto agar tidak menabrak batas waktu serverless. |
@@ -76,8 +76,8 @@ select id from auth.users where email = 'admin@guestpro.id';
 
 - **Storage**: 300 tamu × 27 shot × 2 versi × 400 KB ≈ 6,5 GB per acara.
   Supabase free = 1 GB, Pro = 100 GB.
-- **Galeri admin** memuat file ukuran penuh. Kalau satu acara menembus ribuan foto,
-  aktifkan Supabase Image Transformation atau tambahkan upload thumbnail 400px
-  (lihat `lib/camera/capture.ts`).
+- **Galeri admin** memakai thumbnail ±480px (±30 KB) yang dibuat HP tamu saat
+  menjepret; lightbox dan ZIP tetap memakai file penuh. Foto dari sebelum fitur
+  ini (`has_thumb = false`) tampil memakai file penuh.
 - **Vercel Hobby** membatasi route 60 detik; `maxDuration` di route download
   disetel 300 detik untuk Pro.

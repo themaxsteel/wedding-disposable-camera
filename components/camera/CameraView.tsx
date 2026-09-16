@@ -25,7 +25,7 @@ import CaptionSheet from "@/components/camera/CaptionSheet";
 import Toast from "@/components/camera/Toast";
 import type { GuestSessionInfo } from "@/lib/types";
 
-/** Jeda antar jepretan di sisi client; server menolak di bawah 1 detik. */
+/** Jeda antar jepretan di sisi client; server menolak klaim film di bawah 400 ms (MIN_SHOT_INTERVAL_MS). */
 const SHOT_COOLDOWN_MS = 1500;
 
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
